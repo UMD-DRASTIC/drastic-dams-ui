@@ -1,8 +1,7 @@
 <template>
   <div class="finder">
-    <h2>Finder: {{ path }}</h2>
     <div class="example-tree">
-      <tree :data="treeData0" >
+      <tree df:data="fetchData" :options="treeOptions" df:filter="filter" ref="tree">
         <span class="tree-text" slot-scope="{ node }">
           <template v-if="!node.hasChildren()">
             <i class="ion-android-star"></i>
@@ -20,27 +19,52 @@
 </template>
 
 <script>
+/* eslint-disable no-console */
+/* eslint-disable no-alert */
 import LiquorTree from 'liquor-tree'
+const $rdf = require('rdflib')
+const store = $rdf.graph();
+const fetcher = new $rdf.Fetcher(store);
+const LDP = $rdf.Namespace('http://www.w3.org/ns/ldp#');
+const ldp_baseurl = 'http://0.0.0.0/';
+const base_container = store.sym(ldp_baseurl); // + 'submissions/');
 
-function getTreeData0() {
-  return [
-    { text: 'Disc C:', state: { expanded: true }, children: [
-      { text: 'PerfLogs' },
-      { text: 'Users', children: [
-        { text: 'User 1' },
-        { text: 'User 2' },
-        { text: 'User 3' }
-      ]},
-      { text: 'tomcat' },
-      { text: 'sysCache' },
-      { text: 'Program Files', children: [
-        { text: 'Intel' },
-        { text: 'Internet Explorer' },
-        { text: 'Opera' },
-        { text: 'Oracle' }
-      ]}
-    ]}
-  ]
+function makeViewData(tree_node, container) {
+  let contents = store.each(container, LDP('contains'));
+  let result = [];
+  for (var i=0; i<contents.length; i++) {
+    let text = contents[i].uri.split('/').reverse()[1];
+    let n = {id:null, text:text};
+    if(contents[i].uri.endsWith("/")) {
+      n['isBatch'] = true;
+    }
+    result.push(n);
+  }
+  result.sort(function(a, b) {
+    var x = a.text.toLowerCase();
+    var y = b.text.toLowerCase();
+    if (x < y) {return -1;}
+    if (x > y) {return 1;}
+    return 0;
+  });
+  return result;
+}
+
+function makePath(base_path, tree_node) {
+  if(tree_node.id == 'root') {  // get base node
+    if(base_path == '/') {
+      return "";
+    } else {
+      return base_path;
+    }
+  }
+  var segments = [];
+  for(var n = tree_node; n != null; n = n.parent) {
+    segments.push(n.data.text);
+  }
+  let result = segments.reverse().join('/');
+  if(tree_node.isBatch) { result += "/"; }
+  return result;
 }
 
 export default {
@@ -51,9 +75,31 @@ export default {
   components: {
     'tree': LiquorTree
   },
-  data: () => ({
-    treeData0: getTreeData0()
-  })
+  data: function() {
+    return {
+      treeOptions: {
+        propertyNames: {
+          //text: 'text',
+          children: 'contents'
+        },
+        minFetchDelay: 1000,
+        fetchData: node => {
+          let base_path = this.path;
+          return new Promise(function (resolve) {
+            let uri = base_container.uri + makePath(base_path, node);
+            let container = store.sym(uri);
+            fetcher.load(container).then(() => {
+              let result = makeViewData(node, container);
+              resolve(result);
+            }).catch(e => console.log(e));
+          });
+        },
+        onFetchError(error) {
+          console.error(error)
+        }
+      }
+    }
+  }
 }
 </script>
 

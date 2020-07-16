@@ -90,7 +90,11 @@
           </div>
         </div>
 
-        <Finder path="/foo/bar"/>
+        <h2>Archival Description</h2>
+        <Finder path="/"/>
+
+        <h2>Submissions</h2>
+        <Finder path="submissions/"/>
 
         <h2>Section title</h2>
         <div class="table-responsive">

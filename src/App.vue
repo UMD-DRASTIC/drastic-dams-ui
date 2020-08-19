@@ -15,28 +15,34 @@
         <div class="sidebar-sticky">
           <ul class="nav flex-column">
             <li class="nav-item">
-              <a class="nav-link active" href="#">
-                <feather size="1.1em" type="archive"></feather>
-                Collections <span class="sr-only">(current)</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">
+              <router-link class="nav-link" to="/dashboard">
                 <feather size="1.1em" type="inbox"></feather>
-                Deposits
-              </a>
+                Dashboard
+              </router-link>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="#">
+              <router-link class="nav-link" to="/description">
+                <feather size="1.1em" type="archive"></feather>
+                Archival Desription <span class="sr-only">(current)</span>
+              </router-link>
+            </li>
+            <li class="nav-item">
+              <router-link class="nav-link" to="/submissions">
+                <feather size="1.1em" type="inbox"></feather>
+                Submissions
+              </router-link>
+            </li>
+            <li class="nav-item">
+              <router-link class="nav-link" to="/destructions">
                 <feather size="1.1em" type="trash-2"></feather>
-                To Be Destroyed
-              </a>
+                Destructions
+              </router-link>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="#">
+              <router-link class="nav-link" to="/reports">
                 <feather size="1.1em" type="pie-chart"></feather>
                 Reports
-              </a>
+              </router-link>
             </li>
           </ul>
 
@@ -77,153 +83,9 @@
 
       <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
         <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-          <h1 class="h2">Dashboard</h1>
-          <div class="btn-toolbar mb-2 mb-md-0">
-            <div class="btn-group mr-2">
-              <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
-              <span data-feather="calendar"></span>
-              This week
-            </button>
-          </div>
+          <router-view />
         </div>
 
-        <h2>Archival Description</h2>
-        <Finder path="/"/>
-
-        <h2>Submissions</h2>
-        <Finder path="submissions/"/>
-
-        <h2>Section title</h2>
-        <div class="table-responsive">
-          <table class="table table-striped table-sm">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Header</th>
-                <th>Header</th>
-                <th>Header</th>
-                <th>Header</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>1,001</td>
-                <td>Lorem</td>
-                <td>ipsum</td>
-                <td>dolor</td>
-                <td>sit</td>
-              </tr>
-              <tr>
-                <td>1,002</td>
-                <td>amet</td>
-                <td>consectetur</td>
-                <td>adipiscing</td>
-                <td>elit</td>
-              </tr>
-              <tr>
-                <td>1,003</td>
-                <td>Integer</td>
-                <td>nec</td>
-                <td>odio</td>
-                <td>Praesent</td>
-              </tr>
-              <tr>
-                <td>1,003</td>
-                <td>libero</td>
-                <td>Sed</td>
-                <td>cursus</td>
-                <td>ante</td>
-              </tr>
-              <tr>
-                <td>1,004</td>
-                <td>dapibus</td>
-                <td>diam</td>
-                <td>Sed</td>
-                <td>nisi</td>
-              </tr>
-              <tr>
-                <td>1,005</td>
-                <td>Nulla</td>
-                <td>quis</td>
-                <td>sem</td>
-                <td>at</td>
-              </tr>
-              <tr>
-                <td>1,006</td>
-                <td>nibh</td>
-                <td>elementum</td>
-                <td>imperdiet</td>
-                <td>Duis</td>
-              </tr>
-              <tr>
-                <td>1,007</td>
-                <td>sagittis</td>
-                <td>ipsum</td>
-                <td>Praesent</td>
-                <td>mauris</td>
-              </tr>
-              <tr>
-                <td>1,008</td>
-                <td>Fusce</td>
-                <td>nec</td>
-                <td>tellus</td>
-                <td>sed</td>
-              </tr>
-              <tr>
-                <td>1,009</td>
-                <td>augue</td>
-                <td>semper</td>
-                <td>porta</td>
-                <td>Mauris</td>
-              </tr>
-              <tr>
-                <td>1,010</td>
-                <td>massa</td>
-                <td>Vestibulum</td>
-                <td>lacinia</td>
-                <td>arcu</td>
-              </tr>
-              <tr>
-                <td>1,011</td>
-                <td>eget</td>
-                <td>nulla</td>
-                <td>Class</td>
-                <td>aptent</td>
-              </tr>
-              <tr>
-                <td>1,012</td>
-                <td>taciti</td>
-                <td>sociosqu</td>
-                <td>ad</td>
-                <td>litora</td>
-              </tr>
-              <tr>
-                <td>1,013</td>
-                <td>torquent</td>
-                <td>per</td>
-                <td>conubia</td>
-                <td>nostra</td>
-              </tr>
-              <tr>
-                <td>1,014</td>
-                <td>per</td>
-                <td>inceptos</td>
-                <td>himenaeos</td>
-                <td>Curabitur</td>
-              </tr>
-              <tr>
-                <td>1,015</td>
-                <td>sodales</td>
-                <td>ligula</td>
-                <td>in</td>
-                <td>libero</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </main>
     </div>
   </div>
@@ -232,13 +94,11 @@
 </template>
 
 <script>
-import Finder from './components/Finder.vue'
 import VueFeather from 'vue-feather';
 
 export default {
   name: 'app',
   components: {
-    'Finder': Finder,
     'feather': VueFeather
   }
 }
@@ -253,5 +113,15 @@ export default {
   color: #2c3e50;
   padding: 0px;
   padding-top: 40px;
+}
+div.folderview {
+  background-color: #bfbfbf;
+  width: auto;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  text-align: center;
+  padding: 0px;
+  margin: 0px;
 }
 </style>

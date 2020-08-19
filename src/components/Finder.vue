@@ -9,8 +9,21 @@
           </template>
 
           <template v-else>
-            <i :class="[node.expanded() ? 'ion-android-folder-open' : 'ion-android-folder']"></i>
-            {{ node.text }}
+            <div id="file-drag-drop" style='display: inline'>
+              <form
+                @drag.stop.prevent
+                @dragstart.stop.prevent
+                @dragend.stop.prevent
+                @dragover.stop.prevent
+                @dragenter.stop.prevent
+                @dragleave.stop.prevent
+                @drop.stop.prevent="drop">
+                <i :class="[node.expanded() ? 'ion-android-folder-open' : 'ion-android-folder']"></i> {{ node.text }}</form>
+                <div v-for="file in files" :key="file.name" class="file-listing">
+                  <img class="preview" v-bind:ref="'preview'+parseInt( file.name )"/>
+                  {{ file.name }}
+                </div>
+            </div>
           </template>
         </span>
       </tree>
@@ -22,7 +35,7 @@
 /* eslint-disable no-console */
 /* eslint-disable no-alert */
 import LiquorTree from 'liquor-tree'
-const $rdf = require('rdflib')
+const $rdf = require('rdflib');
 const store = $rdf.graph();
 const fetcher = new $rdf.Fetcher(store);
 const LDP = $rdf.Namespace('http://www.w3.org/ns/ldp#');
@@ -62,9 +75,17 @@ function makePath(base_path, tree_node) {
   for(var n = tree_node; n != null; n = n.parent) {
     segments.push(n.data.text);
   }
-  let result = segments.reverse().join('/');
+  let result = base_path + segments.reverse().join('/');
   if(tree_node.isBatch) { result += "/"; }
   return result;
+}
+
+function determineDragAndDropCapable() {
+ var div = document.createElement('div');
+ return ( ( 'draggable' in div )
+         || ( 'ondragstart' in div && 'ondrop' in div ) )
+         && 'FormData' in window
+         && 'FileReader' in window;
 }
 
 export default {
@@ -77,6 +98,7 @@ export default {
   },
   data: function() {
     return {
+      dragAndDropCapable: false,
       treeOptions: {
         propertyNames: {
           //text: 'text',

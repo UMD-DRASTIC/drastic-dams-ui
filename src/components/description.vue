@@ -4,7 +4,7 @@
     <h2>Archival Description</h2>
   </div>
   <div class="row">
-    <div class="scroll col-md-6">
+    <div class="scroll col-md-4">
       <tree df:data="fetchData" :options="treeOptions" df:filter="filter" ref="tree">
         <span class="tree-text" slot-scope="{ node }" @click="focus($event, node)">
           <template v-if="!node.hasChildren()">
@@ -18,26 +18,33 @@
         <Uploader />
       </tree>
     </div>
-
-    <div id="tabs" class="col-md-6" v-if="rdfdetails && rdfdetails.length > 0">
-      <p><span><b>{{ rdfdetails[0].subject }}</b></span></p>
+    <div id="tabs" class="col-md-8" v-if="rdfdetails && rdfdetails.length > 0">
+      <div class="container">
+         <span v-for="(c, index) in crumbs" :key="index" class="crumb">
+           >> {{ c }}
+         </span>
+      </div>
     <div class="tabs">
         <a v-on:click="activetab=1" v-bind:class="[ activetab === 1 ? 'active' : '' ]">Description</a>
-        <a v-on:click="activetab=2" v-bind:class="[ activetab === 2 ? 'active' : '' ]">Tab 2</a>
-        <a v-on:click="activetab=3" v-bind:class="[ activetab === 3 ? 'active' : '' ]">Tab 3</a>
+        <a v-on:click="activetab=2" v-bind:class="[ activetab === 2 ? 'active' : '' ]">Related Assets</a>
+        <a v-on:click="activetab=3" v-bind:class="[ activetab === 3 ? 'active' : '' ]">System</a>
     </div>
 
     <div class="content">
         <div v-if="activetab === 1" class="tabcontent">
-          <div v-for="(s, index) in icmsDescriptions" :key="index">
-            <p><span>{{ s.predicate }}</span>&nbsp;&nbsp;<span>{{ s.object }}</span></p>
+          <div v-for="s in icmsProps" :key="s[0]" class="row">
+            <div class="col-md-3">{{ s[0] }}</div>
+            <div class="col-md-9">{{ s[1] }}</div>
           </div>
         </div>
         <div v-if="activetab === 2" class="tabcontent">
             Content for tab two
         </div>
         <div v-if="activetab === 3" class="tabcontent">
-            Content for tab three
+          <div v-for="s in systemProps" :key="s[0]" class="row">
+            <div class="col-md-6">{{ s[0] }}</div>
+            <div class="col-md-6">{{ s[1] }}</div>
+          </div>
         </div>
     </div>
 
@@ -111,6 +118,7 @@ export default {
       let container = store.sym(base_container.uri + makePath(node));
       fetcher.load(container).then(() => {
         this.rdfdetails = store.statementsMatching(container, undefined, undefined);
+        this.currentpath = makePath(node);
         console.log(e, this.rdfdetails);
       }).catch(e => console.log(e));
 
@@ -119,14 +127,37 @@ export default {
   mounted() {
   },
   computed: {
-    icmsDescriptions: function () {
-      return this.rdfdetails.filter(s => re_icms.test(s.predicate));
+    icmsProps: function () {
+      return this.rdfdetails.filter(s => re_icms.test(s.predicate)).map(
+        v => {
+          let result = [];
+          result[0] = String(v.predicate).match(re_icms)[1];
+          result[1] = v.object;
+          return result;
+        }
+      ).filter(foo => foo[0] != "RediscoveryExport");
+    },
+    systemProps: function () {
+      return this.rdfdetails.filter(s => !re_icms.test(s.predicate)).map(
+        v => {
+          let result = [];
+          result[0] = v.predicate;
+          result[1] = v.object;
+          return result;
+        }
+      );
+    },
+    crumbs: function() {
+      let segs = this.currentpath.split('/');
+      segs.pop();
+      return segs;
     }
   },
   data: function() {
     return {
       rdfdetails: [],
       activetab: 1,
+      currentpath: "/",
       treeOptions: {
         propertyNames: {
           //text: 'text',
@@ -168,7 +199,12 @@ li {
   margin: 0 10px;
 }
 a {
-  color: #42b983;
+  /* color: #42b983;*/
+}
+
+span.crumb {
+  font-weight: bolder;
+  font-size: larger;
 }
 
 /* Style the tabs */

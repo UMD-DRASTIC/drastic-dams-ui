@@ -1,91 +1,57 @@
 <template>
 <div id="app" class="container-fluid">
   <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
-    <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">DAMS</a>
-    <input class="form-control form-control-dark w-100" type="text" placeholder="Search" aria-label="Search">
-    <ul class="navbar-nav px-3">
+    <router-link class="navbar-brand col-sm-1 col-md-1 mr-0" to="/dashboard">
+      <feather size="1.1em" type="home"></feather> Home
+    </router-link>
+    <input class="form-control form-control-dark col-md-2" type="text" placeholder="Search" aria-label="Search">
+
+    <ul class="nav nav-pills nav-fill col-md-9 px-3">
+      <li class="nav-item text-nowrap">
+
+      </li>
+      <li class="nav-item text-nowrap">
+        <router-link class="nav-link" to="/description">
+          <feather size="1.1em" type="archive"></feather>
+          Archival Desription <span class="sr-only">(current)</span>
+        </router-link>
+      </li>
+      <li class="nav-item text-nowrap">
+        <router-link class="nav-link" to="/submissions">
+          <feather size="1.1em" type="inbox"></feather>
+          Submissions
+        </router-link>
+      </li>
+      <li class="nav-item text-nowrap">
+        <router-link class="nav-link" to="/destructions">
+          <feather size="1.1em" type="trash-2"></feather>
+          Destructions
+        </router-link>
+      </li>
+      <li class="nav-item text-nowrap">
+        <router-link class="nav-link" to="/reports">
+          <feather size="1.1em" type="pie-chart"></feather>
+          Reports
+        </router-link>
+      </li>
+      <li class="nav-item text-nowrap">
+        <router-link class="nav-link" to="/saved">
+          <feather size="1.1em" type="star"></feather>
+          Bookmarks
+        </router-link>
+      </li>
       <li class="nav-item text-nowrap">
         <a class="nav-link" href="#">Sign out</a>
       </li>
     </ul>
   </nav>
+
   <div class="container-fluid">
     <div class="row">
-      <nav class="col-md-2 d-none d-md-block bg-light sidebar">
-        <div class="sidebar-sticky">
-          <ul class="nav flex-column">
-            <li class="nav-item">
-              <router-link class="nav-link" to="/dashboard">
-                <feather size="1.1em" type="inbox"></feather>
-                Dashboard
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link class="nav-link" to="/description">
-                <feather size="1.1em" type="archive"></feather>
-                Archival Desription <span class="sr-only">(current)</span>
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link class="nav-link" to="/submissions">
-                <feather size="1.1em" type="inbox"></feather>
-                Submissions
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link class="nav-link" to="/destructions">
-                <feather size="1.1em" type="trash-2"></feather>
-                Destructions
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link class="nav-link" to="/reports">
-                <feather size="1.1em" type="pie-chart"></feather>
-                Reports
-              </router-link>
-            </li>
-          </ul>
-
-          <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-            <span>Saved Folders</span>
-            <a class="d-flex align-items-center text-muted" href="#" aria-label="Add a new report">
-              <feather size="1.1em" type="plus-circle"></feather>
-            </a>
-          </h6>
-          <ul class="nav flex-column mb-2">
-            <li class="nav-item">
-              <a class="nav-link" href="#">
-                <span data-feather="file-text"></span>
-                Current month
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">
-                <span data-feather="file-text"></span>
-                Last quarter
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">
-                <span data-feather="file-text"></span>
-                Social engagement
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">
-                <span data-feather="file-text"></span>
-                Year-end sale
-              </a>
-            </li>
-          </ul>
-        </div>
-      </nav>
-
-      <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+      <main role="main" class="col-md-12 ml-sm-auto col-lg-12 px-4">
         <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
           <router-view />
         </div>
-
       </main>
     </div>
   </div>
@@ -115,7 +81,6 @@ export default {
   padding-top: 40px;
 }
 div.folderview {
-  background-color: #bfbfbf;
   width: auto;
   height: 100%;
   overflow-x: hidden;
@@ -123,5 +88,63 @@ div.folderview {
   text-align: center;
   padding: 0px;
   margin: 0px;
+}
+
+.nav a {
+  color: #cccccc;
+}
+
+a.router-link-active {
+  color: #bbbbff;
+  font-weight: bolder;
+}
+
+/* Style the tabs */
+.tabs {
+    overflow: hidden;
+  margin-left: 20px;
+    margin-bottom: -2px;
+}
+
+.tabs ul {
+    list-style-type: none;
+    margin-left: 20px;
+}
+
+.tabs a{
+    float: left;
+    cursor: pointer;
+    padding: 12px 24px;
+    transition: background-color 0.2s;
+    border: 1px solid #ccc;
+    border-right: none;
+    background-color: #f1f1f1;
+    border-radius: 10px 10px 0 0;
+    font-weight: bold;
+}
+.tabs a:last-child {
+    border-right: 1px solid #ccc;
+}
+
+/* Change background color of tabs on hover */
+.tabs a:hover {
+    background-color: #aaa;
+    color: #fff;
+}
+
+/* Styling for active tab */
+.tabs a.active {
+    background-color: #fff;
+    color: #484848;
+    border-bottom: 2px solid #fff;
+    cursor: default;
+}
+
+/* Style the tab content */
+.tabcontent {
+    padding: 30px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+  box-shadow: 3px 3px 6px #e1e1e1
 }
 </style>

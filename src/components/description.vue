@@ -6,7 +6,7 @@
   <div class="row">
     <div class="scroll col-md-4">
       <tree df:data="fetchData" :options="treeOptions" df:filter="filter" ref="tree">
-        <span class="tree-text" slot-scope="{ node }" @click="focus($event, node)">
+        <span class="tree-text" slot-scope="{ node }">
           <template v-if="!node.hasChildren()">
             <i class="ion-android-star"></i>
             {{ node.text }}
@@ -24,29 +24,29 @@
            >> {{ c }}
          </span>
       </div>
-    <div class="tabs">
-        <a v-on:click="activetab=1" v-bind:class="[ activetab === 1 ? 'active' : '' ]">Description</a>
-        <a v-on:click="activetab=2" v-bind:class="[ activetab === 2 ? 'active' : '' ]">Related Assets</a>
-        <a v-on:click="activetab=3" v-bind:class="[ activetab === 3 ? 'active' : '' ]">System</a>
-    </div>
+      <div class="tabs">
+          <a v-on:click="activetab=1" v-bind:class="[ activetab === 1 ? 'active' : '' ]">Description</a>
+          <a v-on:click="activetab=2" v-bind:class="[ activetab === 2 ? 'active' : '' ]">Related Assets</a>
+          <a v-on:click="activetab=3" v-bind:class="[ activetab === 3 ? 'active' : '' ]">System</a>
+      </div>
 
-    <div class="content">
-        <div v-if="activetab === 1" class="tabcontent">
-          <div v-for="s in icmsProps" :key="s[0]" class="row">
-            <div class="col-md-3">{{ s[0] }}</div>
-            <div class="col-md-9">{{ s[1] }}</div>
+      <div class="content">
+          <div v-if="activetab === 1" class="tabcontent">
+            <div v-for="s in icmsProps" :key="s[0]+s[1]" class="row">
+              <div class="col-md-3">{{ s[0] }}</div>
+              <div class="col-md-9">{{ s[1] }}</div>
+            </div>
           </div>
-        </div>
-        <div v-if="activetab === 2" class="tabcontent">
-            Content for tab two
-        </div>
-        <div v-if="activetab === 3" class="tabcontent">
-          <div v-for="s in systemProps" :key="s[0]" class="row">
-            <div class="col-md-6">{{ s[0] }}</div>
-            <div class="col-md-6">{{ s[1] }}</div>
+          <div v-if="activetab === 2" class="tabcontent">
+              Content for tab two
           </div>
-        </div>
-    </div>
+          <div v-if="activetab === 3" class="tabcontent">
+            <div v-for="s in systemProps" :key="s[0]+s[1]" class="row">
+              <div class="col-md-6">{{ s[0] }}</div>
+              <div class="col-md-6">{{ s[1] }}</div>
+            </div>
+          </div>
+      </div>
 
     </div>
 
@@ -114,17 +114,17 @@ export default {
     'tree': LiquorTree
   },
   methods: {
-    focus: async function(e, node) {
+    focus: async function(oldNode, newNode) {
+      let node = newNode && newNode.text ? newNode : oldNode
       let container = store.sym(base_container.uri + makePath(node));
       fetcher.load(container).then(() => {
         this.rdfdetails = store.statementsMatching(container, undefined, undefined);
         this.currentpath = makePath(node);
-        console.log(e, this.rdfdetails);
       }).catch(e => console.log(e));
-
     },
   },
   mounted() {
+    this.$refs.tree.$on("node:selected", this.focus);
   },
   computed: {
     icmsProps: function () {
@@ -207,52 +207,5 @@ span.crumb {
   font-size: larger;
 }
 
-/* Style the tabs */
-.tabs {
-    overflow: hidden;
-  margin-left: 20px;
-    margin-bottom: -2px;
-}
 
-.tabs ul {
-    list-style-type: none;
-    margin-left: 20px;
-}
-
-.tabs a{
-    float: left;
-    cursor: pointer;
-    padding: 12px 24px;
-    transition: background-color 0.2s;
-    border: 1px solid #ccc;
-    border-right: none;
-    background-color: #f1f1f1;
-    border-radius: 10px 10px 0 0;
-    font-weight: bold;
-}
-.tabs a:last-child {
-    border-right: 1px solid #ccc;
-}
-
-/* Change background color of tabs on hover */
-.tabs a:hover {
-    background-color: #aaa;
-    color: #fff;
-}
-
-/* Styling for active tab */
-.tabs a.active {
-    background-color: #fff;
-    color: #484848;
-    border-bottom: 2px solid #fff;
-    cursor: default;
-}
-
-/* Style the tab content */
-.tabcontent {
-    padding: 30px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-  box-shadow: 3px 3px 6px #e1e1e1
-}
 </style>

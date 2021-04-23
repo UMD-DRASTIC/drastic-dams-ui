@@ -26,19 +26,15 @@
       </div>
       <div class="tabs">
           <a v-on:click="activetab=1" v-bind:class="[ activetab === 1 ? 'active' : '' ]">Description</a>
-          <a v-on:click="activetab=2" v-bind:class="[ activetab === 2 ? 'active' : '' ]">Related Assets</a>
           <a v-on:click="activetab=3" v-bind:class="[ activetab === 3 ? 'active' : '' ]">System</a>
       </div>
 
       <div class="content">
           <div v-if="activetab === 1" class="tabcontent">
             <div v-for="s in icmsProps" :key="s[0]+s[1]" class="row">
-              <div class="col-md-3">{{ s[0] }}</div>
-              <div class="col-md-9">{{ s[1] }}</div>
+              <div class="col-md-4">{{ s[0] }}</div>
+              <div class="col-md-8">{{ s[1] }}</div>
             </div>
-          </div>
-          <div v-if="activetab === 2" class="tabcontent">
-              Content for tab two
           </div>
           <div v-if="activetab === 3" class="tabcontent">
             <div v-for="s in systemProps" :key="s[0]+s[1]" class="row">
@@ -63,7 +59,7 @@ const $rdf = require('rdflib');
 const store = $rdf.graph();
 const fetcher = new $rdf.Fetcher(store);
 const LDP = $rdf.Namespace('http://www.w3.org/ns/ldp#');
-const ldp_baseurl = 'http://0.0.0.0/';
+const ldp_baseurl = 'http://localhost:9090';
 const path = 'description/';
 const base_container = store.sym(ldp_baseurl);
 const re_icms = /<https:\/\/rediscoverysoftware\.com\/schema\/icms_ns\/(.*)>/
@@ -130,6 +126,7 @@ export default {
     icmsProps: function () {
       return this.rdfdetails.filter(s => re_icms.test(s.predicate)).map(
         v => {
+          console.log(v);
           let result = [];
           result[0] = String(v.predicate).match(re_icms)[1];
           result[1] = v.object;

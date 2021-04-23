@@ -40,8 +40,6 @@
 <script>
 /* eslint-disable no-console */
 /* eslint-disable no-alert */
-// const LDPNS = 'http://www.w3.org/ns/ldp#';
-// const ldp_baseurl = 'http://0.0.0.0/submissions/';
 
 export default {
   name: 'CreateSubmission',
@@ -63,7 +61,7 @@ export default {
           'Slug': name
         };
         console.log(this.path);
-        let myurl = 'http://localhost:80/submissions/';
+        let myurl = 'http://localhost:9090/submissions/';
         console.log(myurl);
         await this.$http({
           method: 'post',

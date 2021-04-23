@@ -2,7 +2,7 @@ function flatten(arr) {
   return [].concat(...arr)
 }
 
-function Lthelp(node) {
+function Treehelp(node) {
   var about = {
      Version: 0.1,
      Author: "Greg Jansen",
@@ -10,7 +10,7 @@ function Lthelp(node) {
      Updated: "Fall 2020"
   };
   if (window === this) {
-    return new Lthelp(node);
+    return new Treehelp(node);
   }
   if(node) {
     this.node = node;
@@ -20,10 +20,10 @@ function Lthelp(node) {
   }
 }
 
-Lthelp.prototype = {
+Treehelp.prototype = {
   depthFirstChildren: function() {
     return flatten(
-      this.node.children.map( x => x.children.length > 0 ? [x].concat(new Lthelp(x).depthFirstChildren()) : x)
+      this.node.children.map( x => x.children.length > 0 ? [x].concat(new Treehelp(x).depthFirstChildren()) : x)
     )
   },
   makePath: function(base) {
@@ -41,8 +41,8 @@ Lthelp.prototype = {
     let result = segments.reverse().join('/');
     if(base) result = base + result;
     if(this.node.isBatch) { result += "/"; }
-    return result;
+    return result.replace(' ', '_');
   }
 };
 
-export { Lthelp as default };
+export { Treehelp as default };

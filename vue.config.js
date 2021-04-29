@@ -7,12 +7,12 @@ module.exports = {
     }
   },
   devServer: {
-    proxy: {
-      '^/ldp': {
-        target: 'http://0.0.0.0:9090',
-        changeOrigin: true
-      },
-    },
+    // proxy: {
+    //   '^/ldp': {
+    //     target: 'http://0.0.0.0:9090',
+    //     changeOrigin: true
+    //   },
+    // },
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE'
@@ -20,9 +20,5 @@ module.exports = {
     }
   },
   chainWebpack: (config) => {
-    config.module.rule('worker')
-      .test(/\.worker\.js$/i)
-      .use('worker-loader')
-      .loader('worker-loader');
   }
 }

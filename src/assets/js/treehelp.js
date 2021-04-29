@@ -20,6 +20,7 @@ function Treehelp(node) {
   }
 }
 
+/* eslint-disable no-console */
 Treehelp.prototype = {
   depthFirstChildren: function() {
     return flatten(
@@ -42,6 +43,33 @@ Treehelp.prototype = {
     if(base) result = base + result;
     if(this.node.isBatch) { result += "/"; }
     return result.replace(' ', '_');
+  },
+  findVue: function(path) {
+    //console.log('finding: '+path+'in...');
+    //console.log(this.node);
+    var chain = path.split('/');
+    if(path.endsWith('/')) chain.pop();
+    //chain.shift();
+    var currentNode = this.node;
+    for (var j = 0; j < chain.length; j++) {
+      let nextnode = null;
+      for(var i = 0; i < currentNode.$children.length; i++) {
+        let n = currentNode.$children[i];
+        //console.log(n.node.data);
+        if(n.node.data.text == chain[j]) {
+          nextnode = n;
+          break;
+        }
+      }
+      if(nextnode == null) {
+        console.log("not found: "+chain[j]+"\nunder: "+currentNode.text);
+        return null;
+      } else {
+        currentNode = nextnode;
+      }
+    }
+    console.log("found: "+currentNode.node.data.text);
+    return currentNode;
   }
 };
 

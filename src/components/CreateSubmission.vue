@@ -25,7 +25,7 @@
               <button class="modal-default-button" @click="showModal = false">
                 CANCEL
               </button>
-              <button class="modal-default-button" @click="create(containerName); showModal = false; _vm.$forceUpdate();">
+              <button class="modal-default-button" @click="create(containerName); showModal = false;">
                 OK
               </button>
             </slot>
@@ -60,9 +60,7 @@ export default {
           'Link': '<http://www.w3.org/ns/ldp#BasicContainer>; rel="type"',
           'Slug': name
         };
-        console.log(this.path);
         let myurl = 'http://localhost:9090/submissions/';
-        console.log(myurl);
         await this.$http({
           method: 'post',
           url: myurl,

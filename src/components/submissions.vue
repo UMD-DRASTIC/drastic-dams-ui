@@ -115,44 +115,7 @@ import Treehelp from '../assets/js/treehelp.js'
 import filenames from '../assets/js/filenames'
 import sheet from '../assets/js/nps-sheets'
 
-  // Create the worker instance
 const $rdf = require('rdflib');
-const store = $rdf.graph();
-const fetcher = new $rdf.Fetcher(store);
-const LDP = $rdf.Namespace('http://www.w3.org/ns/ldp#');
-const R = LDP('Resource');
-const RS = LDP('RDFSource');
-const BC = LDP('BasicContainer');
-const NRS = LDP('NonRDFSource');
-const PCDM = $rdf.Namespace('http://pcdm.org/models#');
-const DCE = $rdf.Namespace('http://purl.org/dc/elements/1.1/');
-const ldp_baseurl = 'http://localhost:9090';
-const ws_url = 'ws://localhost:9090/notifier';
-const basepath = '/submissions/';
-const base_container = store.sym(ldp_baseurl);
-const updatesocket = new WebSocket(ws_url);
-
-
-function makeViewData(tree_node, container) {
-  let contents = store.each(container, LDP('contains'));
-  let result = [];
-  for (var i=0; i<contents.length; i++) {
-    let n = {id:null, data: { rdf: contents[i] } };
-    if(contents[i].uri.endsWith("/")) {
-      n.data['types'] = [BC.value];
-      n.data['new'] = false;
-      n['text'] = contents[i].uri.split('/').reverse()[1];
-      n['isBatch'] = true;
-    } else {
-      n.data['types'] = [];
-      n.data['new'] = false;
-      n['text'] = contents[i].uri.split('/').reverse()[0];
-    }
-    result.push(n);
-  }
-  result.sort(alphaSort);
-  return result;
-}
 
 function alphaSort(a, b) {
   var x = a.text.toLowerCase();
@@ -170,134 +133,165 @@ function determineDragAndDropCapable() {
          && 'FileReader' in window;
 }
 
-// function sleep() {
-//   return new Promise(resolve => {
-//     console.log('waiting..');
-//     setTimeout(resolve, 20000);
+// function buildUploadTree(rawfiles, node) {
+//   let uploads = [];
+//   let files = rawfiles.sort((a, b) => {
+//     return a.fullPath.localeCompare(b.fullPath)
 //   });
+//   for (var i = 0; i < files.length; i++) {
+//     var chain = files[i].fullPath.split('/');
+//     chain.shift();
+//     var currentNode = node;
+//
+//     // FIXME node:added events work only when adding file to empty folder
+//     for (var j = 0; j < chain.length; j++) {
+//         var wantedText = chain[j];
+//         var lastNode = currentNode;
+//         // find or insert required folders
+//         let newNode = {id: null, data: {new: true, types: [BC.value]}, text: wantedText, children: []};
+//         if(j == chain.length-1) { // last index is the file itself
+//           newNode.data.types = [NRS.value];
+//           newNode.data['file'] = files[i];
+//           newNode.data['uploadPercentage'] = 0;
+//         }
+//         for (var k = 0; k < currentNode.children.length; k++) {
+//             if (currentNode.children[k].data.text == wantedText) {
+//                 currentNode = currentNode.children[k];
+//                 break;
+//             } else if (currentNode.children[k].data.text.localeCompare(wantedText) > 0 ) {
+//                 currentNode.children[k].before(newNode);
+//                 currentNode = currentNode.children[k];
+//                 break;
+//             }
+//         }
+//         if (lastNode == currentNode) {
+//             currentNode = currentNode.append(newNode);
+//             let node_path = new Treehelp(currentNode).makePath(basepath).replace(/ /g,'_');
+//             var node_uri = ldp_baseurl + node_path
+//             if(currentNode.data.types.includes(BC.value)) {
+//               node_uri = node_uri + '/';
+//             }
+//             currentNode.data['rdf'] = store.sym(node_uri);
+//         }
+//     }
+//   }
 // }
 
-function buildUploadTree(rawfiles, node) {
-  let files = rawfiles.sort((a, b) => {
-    return a.fullPath.localeCompare(b.fullPath)
-  });
-  for (var i = 0; i < files.length; i++) {
-    var chain = files[i].fullPath.split('/');
-    chain.shift();
-    var currentNode = node;
+// function ingest(it, node) {
+//   let parent_path = new Treehelp(node.parent).makePath(basepath).replace(/ /g,'_');
+//   var parenturi = ldp_baseurl + parent_path + '/';
+//   console.log("building ingest req for "+node.data.text+" at "+parenturi);
+//   if(node.data.types.includes(BC.value)) {
+//     let head = {
+//       'Content-Type': 'application/ld+json',
+//       'Link': `<${BC.value}>; rel="type"`,
+//       'Slug': node.data.text
+//     };
+//     return it.$http({
+//         method: 'post',
+//         url: parenturi,
+//         headers: head
+//     }).then(resolve => {
+//       setTimeout(resolve, 200);
+//     });
+//   } else if(node.data.types.includes(NRS.value)) {
+//     let entry = node.data.file;
+//     return new Promise((resolve) => {
+//       entry.file((file) => { resolve(file) });
+//     }).then((file) => {
+//       it.$http.post( parenturi, file,
+//         { headers: {
+//           'Link': `<${NRS.value}>; rel="type"`,
+//           'Slug': encodeURIComponent(file.name.replace(/\|/g, '')).replace(/'/g, '%27'),
+//           'Content-Type': 'application/octet-stream'},
+//           onUploadProgress: function( progressEvent ) {
+//             node.data.uploadPercentage = parseInt( Math.round( ( progressEvent.loaded / progressEvent.total ) * 100 ));
+//           }.bind(it)
+//         }
+//       );
+//     }).catch( function(error) {
+//       node.data.failed = true;
+//       console.log('FAILURE!!', error);
+//     });
+//   } else if(node.data.types.includes(RS.value)) {
+//     if('turtle' in node.data) {
+//       it.$http.post( parenturi, node.data.turtle,
+//         { headers: {
+//           'Link': `${RS.value}; rel="type"`,
+//           'Slug': node.data.text,
+//           'Content-Type': 'text/turtle'},
+//           onUploadProgress: function( progressEvent ) {
+//             node.data.uploadPercentage = parseInt( Math.round( ( progressEvent.loaded / progressEvent.total ) * 100 ));
+//           }.bind(it)
+//         }
+//       );
+//     }
+//   }
+// }
 
-    // FIXME node:added events work only when adding file to empty folder
-    for (var j = 0; j < chain.length; j++) {
-        var wantedText = chain[j];
-        var lastNode = currentNode;
-        // find or insert required folders
-        let newNode = {id: null, data: {new: true, types: [BC.value]}, text: wantedText, children: []};
-        if(j == chain.length-1) { // last index is the file itself
-          newNode.data.types = [NRS.value];
-          newNode.data['file'] = files[i];
-          newNode.data['uploadPercentage'] = 0;
+// Find keys in o1 that are missing in o2
+function differenceKeyset(o1, o2)
+{
+    var differenceSet = new Set();
+    console.log(Object.keys(o1));
+    Object.keys(o1).forEach( (key) => {
+        if(!(key in o2)) {
+          differenceSet.add(key);
         }
-        for (var k = 0; k < currentNode.children.length; k++) {
-            if (currentNode.children[k].data.text == wantedText) {
-                currentNode = currentNode.children[k];
-                break;
-            } else if (currentNode.children[k].data.text.localeCompare(wantedText) > 0 ) {
-                currentNode.children[k].before(newNode);
-                currentNode = currentNode.children[k];
-                break;
-            }
-        }
-        if (lastNode == currentNode) {
-            currentNode = currentNode.append(newNode);
-            let node_path = new Treehelp(currentNode).makePath(basepath).replace(/ /g,'_');
-            var node_uri = ldp_baseurl + node_path
-            if(currentNode.data.types.includes(BC.value)) {
-              node_uri = node_uri + '/';
-            }
-            currentNode.data['rdf'] = store.sym(node_uri);
-        }
-    }
-  }
-}
-
-function ingest(it, node) {
-  let parent_path = new Treehelp(node.parent).makePath(basepath).replace(/ /g,'_');
-  var parenturi = ldp_baseurl + parent_path + '/';
-  console.log("building ingest req for "+node.data.text+" at "+parenturi);
-  if(node.data.types.includes(BC.value)) {
-    let head = {
-      'Content-Type': 'application/ld+json',
-      'Link': `<${BC.value}>; rel="type"`,
-      'Slug': node.data.text
-    };
-    return it.$http({
-        method: 'post',
-        url: parenturi,
-        headers: head
-    }).then(resolve => {
-      setTimeout(resolve, 200);
     });
-  } else if(node.data.types.includes(NRS.value)) {
-    let entry = node.data.file;
-    return new Promise((resolve) => {
-      entry.file((file) => { resolve(file) });
-    }).then((file) => {
-      it.$http.post( parenturi, file,
-        { headers: {
-          'Link': `<${NRS.value}>; rel="type"`,
-          'Slug': encodeURIComponent(file.name.replace(/\|/g, '')).replace(/'/g, '%27'),
-          'Content-Type': 'application/octet-stream'},
-          onUploadProgress: function( progressEvent ) {
-            node.data.uploadPercentage = parseInt( Math.round( ( progressEvent.loaded / progressEvent.total ) * 100 ));
-          }.bind(it)
-        }
-      );
-    }).catch( function(error) {
-      node.data.failed = true;
-      console.log('FAILURE!!', error);
-    });
-  } else if(node.data.types.includes(RS.value)) {
-    if('turtle' in node.data) {
-      it.$http.post( parenturi, node.data.turtle,
-        { headers: {
-          'Link': `${RS.value}; rel="type"`,
-          'Slug': node.data.text,
-          'Content-Type': 'text/turtle'},
-          onUploadProgress: function( progressEvent ) {
-            node.data.uploadPercentage = parseInt( Math.round( ( progressEvent.loaded / progressEvent.total ) * 100 ));
-          }.bind(it)
-        }
-      );
-    }
-  }
-}
-
-function submissionHasUploads(anynode, bool) {
-  for(let s = anynode; s != undefined; s = s.parent) {
-    if(s.data.isSubmission == true) {
-      s.data['hasUploads'] = bool;
-      s.data = { ...s.data };
-      s.vm.$forceUpdate();
-      break;
-    }
-  }
+    return differenceSet;
 }
 
 export default {
   name: 'Submissions',
+  props: {
+    activityStreamWebSocketUrl: {  // like 'ws://localhost:9090/notifier'
+      required: true,
+      type: String,
+    },
+    ldpUrl: {  // like 'http://localhost:9090';
+      required: true,
+      type: String
+    },
+    submissionsPath: {
+      type: String,
+      default:  '/submissions/'
+    }
+  },
   components: {
     'tree': LiquorTree
   },
   created() {
-    this.RS = RS;
-    this.NRS = NRS;
-    this.LDP = LDP;
-    this.BC = BC;
+    this.LDP = $rdf.Namespace('http://www.w3.org/ns/ldp#');
+    this.R = this.LDP('Resource');
+    this.RS = this.LDP('RDFSource');
+    this.NRS = this.LDP('NonRDFSource');
+    this.BC = this.LDP('BasicContainer');
+    this.PCDM = $rdf.Namespace('http://pcdm.org/models#');
+    this.DCE = $rdf.Namespace('http://purl.org/dc/elements/1.1/');
+    this.rdfStore = $rdf.graph();
+    this.rdfFetcher = new $rdf.Fetcher(this.rdfStore);
+    this.baseContainer = this.rdfStore.sym(this.ldpUrl + this.submissionsPath);
+    this.activityStreamWebSocket = new WebSocket(this.activityStreamWebSocketUrl);
+    this.activityStreamWebSocket.onmessage = ({ data }) => {
+      const activityMessage = JSON.parse(data);
+      this.updateTree(activityMessage)
+      // TODO log this event in UI list
+    };
+    this.activityStreamWebSocket.onopen = function(event) {
+      console.log(event)
+      console.log("Successfully connected to the echo websocket server...")
+    }
+    this.activityStreamWebSocket.onerror = function(event) {
+      console.log(event)
+      console.log("Error with websocket...")
+    }
   },
   mounted() {
     this.dragAndDropCapable = determineDragAndDropCapable();
     this.$refs.tree.$on("node:selected", this.focus);
-    this.$refs.tree.$on("node:added", this.uploadAdded);
+    // TODO move logic to server-side this.$refs.tree.$on("node:added", this.uploadAdded);
+    //this.$refs.tree.$on("node:added", this.uploadAdded);
   },
   computed: {
     crumbs: function() {
@@ -305,23 +299,19 @@ export default {
       segs.pop();
       return segs;
     },
-    hasuploads: function() {
-      //console.log(this.node);
-      return true;
-    },
     isimage: function() {
       let re_img = /.*\.(jpg|JPG|jpeg|JPEG|png|PNG|gif|GIF|svg|SVG)/
       return re_img.test(this.currentNode.text);
     },
     hasRelatedObjectOf: function() {
-      let d = store.statementsMatching(this.currentNode.data.rdf, PCDM('relatedObjectOf'), undefined);
+      let d = this.rdfStore.statementsMatching(this.currentNode.data.rdf, this.PCDM('relatedObjectOf'), undefined);
       return d.length > 0;
     },
     nodeurl: function() {
-      return base_container.uri + new Treehelp(this.currentNode).makePath(basepath);
+      return this.baseContainer.uri + new Treehelp(this.currentNode).makePath(this.submissionsPath);
     },
     rdfProps: function () {
-      let rdfdetails = store.statementsMatching(this.currentNode.data.rdf, undefined, undefined);
+      let rdfdetails = this.rdfStore.statementsMatching(this.currentNode.data.rdf, undefined, undefined);
       return rdfdetails.map(
         v => {
           let result = [];
@@ -332,15 +322,145 @@ export default {
       );
     },
     relatedObjectOf: function() {
-      return store.each(this.currentNode.data.rdf, PCDM('relatedObjectOf'))[0];
+      return this.rdfStore.each(this.currentNode.data.rdf, this.PCDM('relatedObjectOf'))[0];
     }
   },
   methods: {
+    fetchData: function(node) {
+      let me = this;
+      return new Promise(function (resolve) {
+        var container = null;
+        if(node.id == 'root') {  // get base node
+          container = me.rdfStore.sym(me.baseContainer.uri);
+        } else if('rdf' in node.data) {
+          container = me.rdfStore.sym(node.data.rdf.uri);
+        }
+        console.log(me.rdfStore);
+        me.rdfFetcher.unload(container);
+        me.rdfFetcher.load(container, {'force': true}).then(() => {
+          let result = me.makeViewData(node, container);
+          if(node.id == 'root') {
+            result.forEach((node) => {
+              node.data['isSubmission'] = true;
+            });
+          }
+          resolve(result);
+        }).catch(e => console.log(e));
+      });
+    },
+    makeViewData: function(tree_node, container) {
+      let contents = this.rdfStore.each(container, this.LDP('contains'));
+      let result = [];
+      for (var i=0; i<contents.length; i++) {
+        let n = {id:null, data: { rdf: contents[i] } };
+        if(contents[i].uri.endsWith("/")) {
+          n.data['types'] = [this.BC.value];
+          n.data['new'] = false;
+          n['text'] = contents[i].uri.split('/').reverse()[1];
+          n['isBatch'] = true;
+        } else {
+          n.data['types'] = [];
+          n.data['new'] = false;
+          n['text'] = contents[i].uri.split('/').reverse()[0];
+        }
+        result.push(n);
+      }
+      result.sort(alphaSort);
+      this.subscribe(container.uri);
+      return result;
+    },
+    updateTree: function(activityMessage) {
+      const url = new URL(activityMessage.object.id);
+      console.log("updating: "+url);
+      let relPath = url.pathname.substring(this.submissionsPath.length);
+      let segments = relPath.split('/');
+      if(relPath.endsWith('/')) {
+        segments.pop();
+      }
+      let slug = segments.pop();
+      let parentPath = segments.join('/');
+      switch(activityMessage.type[1]) {
+        case "Update":
+          if(relPath == "") { // tree root is special case
+            this.fetchData({'id': 'root'}).then((children) => {
+              var oldChildMap = {};
+              this.$refs.tree.tree.model.forEach((c) => { oldChildMap[c.data.text] = c });
+              var neuw = {};
+              children.forEach((c) => { neuw[c.text] = c });
+              differenceKeyset(oldChildMap, neuw).forEach((name) => {
+                console.log('removing '+name+' at root');
+                oldChildMap[name].remove();
+              })
+              differenceKeyset(neuw, oldChildMap).forEach((name) => {
+                console.log('adding '+name+' at root');
+                this.$refs.tree.addChild(neuw[name]);
+              })
+              this.$refs.tree.sortTree(alphaSort);
+            });
+          } else {
+            var vue = new Treehelp(this.$refs.tree).findVue(relPath);
+            var ltnode = vue.node;
+            console.log(ltnode);
+            this.fetchData(ltnode).then((children) => {
+              console.log(children);
+              var oldChildMap = {};
+              ltnode.children.forEach((c) => { oldChildMap[c.data.text] = c });
+              var neuw = {};
+              children.forEach((c) => { neuw[c.text] = c });
+              differenceKeyset(oldChildMap, neuw).forEach((name) => {
+                console.log('removing '+name+' at '+ltnode.data.text);
+                oldChildMap[name].remove();
+              })
+              differenceKeyset(neuw, oldChildMap).forEach((name) => {
+                console.log('adding '+name+' at '+ltnode.data.text);
+                ltnode.addChild(neuw[name]);
+              })
+              let data = ltnode.data;
+              ltnode.data = data;
+              this.$refs.tree.sortTree(alphaSort);
+            });
+          }
+          break;
+      }
+    },
+    enqueueIngests: function(rawfiles, node) {
+      let ingests = [];
+      let folders = {};
+      let files = rawfiles.sort((a, b) => {
+        return a.fullPath.localeCompare(b.fullPath)
+      });
+      for (var i = 0; i < files.length; i++) {
+        var chain = files[i].fullPath.split('/');
+        chain.shift();
+        var currentNode = node;
+        for (var j = 0; j < chain.length; j++) {
+            var lastNode = currentNode;
+            var slug = chain[j];
+            let path = new Treehelp(currentNode).makePath(this.submissionsPath).replace(/ /g,'_');
+            var parenturi = this.ldpUrl + path + '/';
+            var newuri = parenturi+slug;
+            if(j == chain.length-1) { // last index is the file itself
+              // this is a file
+              let ingest = {parent_uri: parenturi, types: [this.BC.value], slug: slug};
+              ingest.types = [this.NRS.value];
+              ingest['file'] = files[i];
+              // TODO ingest the file
+            } else {
+              // this is a container
+              if(folders[newuri]) {
+                continue;
+              } else {
+                folders[newuri] = true;
+                // TODO ingest the folder
+              }
+            }
+        }
+      }
+    },
     drop: async function(e, node) {
       node.expand();
       let files = await new dtransfers(e.dataTransfer).getAllFileEntries();
-      submissionHasUploads(node, true);
-      buildUploadTree(files, node);
+      this.enqueueIngests(files, node);
     },
     focus: async function(oldNode, newNode) {
       let node = newNode && newNode.text ? newNode : oldNode
@@ -356,10 +476,14 @@ export default {
       //  this.rdfdetails = store.statementsMatching(uri, undefined, undefined);
       //}).catch(e => console.log(e));
     },
+    subscribe: async function(uri) {
+      console.log('subscribe called for: '+uri)
+      this.activityStreamWebSocket.send(JSON.stringify({subscribe: uri}))
+    },
     uploadAdded: async function(parent, newnode) {
       console.log(newnode)
-      console.log(NRS.value)
-      if(newnode.data.types.includes(NRS.value) && newnode.data.new) {
+      console.log(this.NRS.value)
+      if(newnode.data.types.includes(this.NRS.value) && newnode.data.new) {
         console.log(newnode);
         let fn = new filenames(newnode.data.file.name);
 
@@ -374,9 +498,9 @@ export default {
         let paths = fn.getDescriptionPaths();
         let result = null;
         for( let i = 0; i < paths.length; i++) {
-          let base_container = store.sym(ldp_baseurl);
-          let desc = store.sym(base_container.uri + '/description' + paths[i]);
-          await fetcher.load(desc).then(() => {
+          let base_container = this.rdfStore.sym(this.ldpUrl);
+          let desc = this.rdfStore.sym(base_container.uri + '/description' + paths[i]);
+          await this.rdfFetcher.load(desc).then(() => {
             result = desc;
           }).catch(() => {
             console.log(paths[i]+ ' not found');
@@ -387,40 +511,40 @@ export default {
         }
         if(result != null) {
           let data = newnode.data;
-          store.add(data.rdf, PCDM('relatedObjectOf'), result);
+          this.rdfStore.add(data.rdf, this.PCDM('relatedObjectOf'), result);
           data['linked'] = true;
           newnode.data = data;
         }
       }
     },
-    uploadFiles(node) {
-      // build array of all new folders and files in order.
-      // ingest folders and files in order.
-      var q = new Promise(() => { console.log("Ingest starting..." )});
-      var counter = 0;
-      let lt = new Treehelp(node);
-      lt.depthFirstChildren().forEach( child => {
-        if(child.data.new) {
-          let p = ingest(this, child);
-          q = q.then(p);
-          q.then(() => {
-            counter++;
-          });
-        }
-      });
-      q.then(() => {
-        submissionHasUploads(node, false);
-        console.log(counter+" objects ingested.");
-      });
-    },
+    // uploadFiles(node) {
+    //   // build array of all new folders and files in order.
+    //   // ingest folders and files in order.
+    //   var q = new Promise(() => { console.log("Ingest starting..." )});
+    //   var counter = 0;
+    //   let lt = new Treehelp(node);
+    //   lt.depthFirstChildren().forEach( child => {
+    //     if(child.data.new) {
+    //       let p = this.ingest(this, child);
+    //       q = q.then(p);
+    //       q.then(() => {
+    //         counter++;
+    //       });
+    //     }
+    //   });
+    //   q.then(() => {
+    //     submissionHasUploads(node, false);
+    //     console.log(counter+" objects ingested.");
+    //   });
+    // },
     getPath(node) {
       return new Treehelp(node).makePath();
     },
     harvestDCSheet(node) {
-      let dcuri = ldp_baseurl + '/submissions/' + this.getPath(node) + '/' + 'Extracted-Dublin-Core';
+      let dcuri = this.ldpUrl + '/submissions/' + this.getPath(node) + '/' + 'Extracted-Dublin-Core';
       node.expand();
-      let turtle = node.data.sheet.harvestDC(ldp_baseurl+'/description/');
-      let newNode = {id: null, data: {new: true, types: [RS.value], turtle: turtle }, text: "Extracted-Dublin-Core"};
+      let turtle = node.data.sheet.harvestDC(this.ldpUrl+'/description/');
+      let newNode = {id: null, data: {new: true, types: [this.RS.value], turtle: turtle }, text: "Extracted-Dublin-Core"};
       node.append(newNode);
     }
   },
@@ -431,42 +555,14 @@ export default {
       currentSubmission: undefined,
       rdfdetails: undefined,
       descdetails: undefined,
-      ldp_baseurl: ldp_baseurl,
+      //ldp_baseurl: ldp_baseurl,
       activetab: 1,
       treeOptions: {
         propertyNames: {
           children: 'contents'
         },
-        // store: {
-        //   getter: () => {
-        //     return this.$store.getters.tree
-        //   },
-        //   dispatcher(tree) {
-        //     this.$store.dispatch('updateTree', tree)
-        //   }
-        // },
         minFetchDelay: 1000,
-        fetchData: node => {
-          return new Promise(function (resolve) {
-            var container = null;
-            if(node.id == 'root') {  // get base node
-              container = store.sym(base_container.uri + ((basepath) ? basepath : '/'));
-            } else if('rdf' in node.data) {
-              container = store.sym(node.data.rdf.uri);
-            }
-            //console.log('getting child data');
-            //console.log(container);
-            fetcher.load(container).then(() => {
-              let result = makeViewData(node, container);
-              if(node.id == 'root') {
-                result.forEach((node) => {
-                  node.data['isSubmission'] = true;
-                });
-              }
-              resolve(result);
-            }).catch(e => console.log(e));
-          });
-        },
+        fetchData: this.fetchData,
         onFetchError(error) {
           console.error(error)
         }

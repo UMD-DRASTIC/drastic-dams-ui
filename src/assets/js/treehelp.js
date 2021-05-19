@@ -68,7 +68,7 @@ Treehelp.prototype = {
         currentNode = nextnode;
       }
     }
-    console.log("found: "+currentNode.node.data.text);
+    //console.log("found: "+currentNode.node.data.text);
     return currentNode;
   }
 };

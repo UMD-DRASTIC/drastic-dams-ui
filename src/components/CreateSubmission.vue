@@ -1,6 +1,6 @@
 <template>
   <div style='display: inline'>
-  <button id="show-modal" @click="showModal = true">Create Submission</button>
+  <button id="show-modal" @click="showModal = true; setFocus();">Create Submission</button>
   <transition name="modal" v-if="showModal" @close="showModal = false">
     <div class="modal-mask">
       <div class="modal-wrapper">
@@ -16,7 +16,9 @@
             <div v-if="isError">error</div>
             <div v-else-if="isLoading">loading</div>
             <div v-else>
-              <input v-model="containerName" :placeholder="'enter submission name..'">
+              <form v-on:submit="create(containerName); showModal = false;">
+                <input ref="name" v-model="containerName" :placeholder="'enter submission name..'">
+              </form>
             </div>
           </div>
 
@@ -40,6 +42,7 @@
 <script>
 /* eslint-disable no-console */
 /* eslint-disable no-alert */
+const $rdf = require('rdflib');
 
 export default {
   name: 'CreateSubmission',
@@ -51,21 +54,29 @@ export default {
       isError: false
     }
   },
+  created() {
+    this.RDF = $rdf.Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+    this.NPS = $rdf.Namespace('https://example.nps.gov/2021/nps-workflow#');
+    this.LDP = $rdf.Namespace('http://www.w3.org/ns/ldp#');
+    this.BC = this.LDP('BasicContainer');
+  },
   methods: {
+    setFocus() {
+      this.$nextTick(() => this.$refs.name.focus());
+    },
     async create (name) {
       try {
         this.isLoading = true;
         let head = {
-          'Content-Type': 'application/ld+json',
-          'Link': '<http://www.w3.org/ns/ldp#BasicContainer>; rel="type"',
+          'Content-Type': 'text/turtle',
+          'Link': `<${ this.BC.value }>; rel="type"`,
           'Slug': name
         };
         let myurl = 'http://localhost:9090/submissions/';
-        await this.$http({
-          method: 'post',
-          url: myurl,
-          headers: head
-        });
+        await this.$http.post(myurl,
+          `<> a <${this.NPS('submission').value}> .`,
+          { headers: head }
+        );
       } catch(err) {
         console.log(err);
         this.isError = true;

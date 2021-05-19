@@ -60,7 +60,7 @@ const store = $rdf.graph();
 const fetcher = new $rdf.Fetcher(store);
 const LDP = $rdf.Namespace('http://www.w3.org/ns/ldp#');
 const ldp_baseurl = 'http://localhost:9090';
-const path = 'description/';
+const path = '/description/';
 const base_container = store.sym(ldp_baseurl);
 const re_icms = /<https:\/\/rediscoverysoftware\.com\/schema\/icms_ns\/(.*)>/
 

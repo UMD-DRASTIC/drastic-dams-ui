@@ -1,13 +1,13 @@
 <template>
-  <div class="container-fluid">
+  <div class="container-fluid d-flex flex-column h-100">
     <div class="row">
       <h2>Submissions</h2>
       <div style="padding-left: 5em">&nbsp;&nbsp;&nbsp;&nbsp;<CreateSubmission /></div>
     </div>
-    <div class="row">
-      <div class="scroll col-md-6">
-        <tree df:data="fetchData" :options="treeOptions" df:filter="filter" ref="tree">
-          <span class="tree-text" slot-scope="{ node }" v-bind:class="{ new: node.data.new }">
+    <div class="row h-70">
+      <div class="col-md-6 overflow-auto" style="overflow-y: scroll; height: 700px">
+        <tree df:data="fetchData" dafdv-slot:default="slotProps" :options="treeOptions" df:filter="filter" ref="tree">
+          <span class="tree-text" slot-scope="{ node }" >
             <div id="file-drag-drop" style='display: inline'>
               <form
                 @drag.stop.prevent
@@ -17,28 +17,19 @@
                 @dragenter.stop.prevent
                 @dragleave.stop.prevent
                 @drop.stop.prevent="drop($event, node)">
-                <template v-if="node.data.isSubmission">
-                  <feather type="archive" /> &nbsp;&nbsp;&nbsp;&nbsp; {{ node.text }}
-                  <a v-if="node.data.hasUploads" class="btn-sm btn-info" v-on:click.stop.prevent="uploadFiles(node)">Upload</a>
-                </template>
-                <template v-else-if="node.data.types.includes(BC.value) && !node.data.new">
-                  <feather type="folder" /> &nbsp;&nbsp;&nbsp;&nbsp; {{ node.text }}
-                </template>
-                <template v-else-if="node.data.types.includes(BC.value) && node.data.new">
-                  <feather type="folder-plus" /> &nbsp;&nbsp;&nbsp;&nbsp; {{ node.text }}
-                </template>
-                <template v-if="node.data.types.includes(NRS.value) && !node.data.new">
-                  <feather type="file" /> &nbsp;&nbsp;&nbsp;&nbsp; {{ node.text }}
-                </template>
-                <template v-if="node.data.types.includes(NRS.value) && node.data.new">
-                  <feather type="file-plus" v-if="node.data.types.includes(NRS.value)"/>
-                  <feather type="link" v-if="node.data.linked"/>
-                  &nbsp;&nbsp;&nbsp;&nbsp; {{ node.text }}
-                  <a v-if="node.data.metadata" class="btn-sm btn-info" v-on:click.stop.prevent="harvestDCSheet(node)">Extract Dublin Core</a>
-                  &nbsp;&nbsp;<progress v-if="'file' in node.data" max="100" :value.prop="node.data.uploadPercentage">{{ node.data.uploadPercentage }}</progress>
-                </template>
-                <template v-if="node.data.types.includes(RS.value)">
-                  <feather type="layers"/> &nbsp;&nbsp;&nbsp;&nbsp; {{ node.text }}
+                <template>
+                  <feather :type="icon(node.data.rdf)" />
+                  &nbsp;&nbsp; {{ node.data.text }} &nbsp;&nbsp;
+                  <template v-if="is(node.data.rdf, NRS) && node.data.rdf.value.endsWith('.tif')">
+                    <span style="font-family: 'Courier New', monospace;">
+                      <span style="color: red" v-if="node.data.md5Manifest == null">[</span>
+                      <span v-else>[</span>
+                      <span style="color: red" v-if="node.data.md5Manifest == null || node.data.md5System == null || node.data.md5System != node.data.md5Manifest">≠</span>
+                      <span v-else>=</span>
+                      <span style="color: red" v-if="node.data.md5System == null">]</span>
+                      <span v-else>]</span>
+                    </span>
+                  </template>
                 </template>
               </form>
             </div>
@@ -53,7 +44,7 @@
         </div>
 
         <div class="container">
-          <h2>{{ currentNode['text'] }}</h2>
+          <h2><template v-if="is(currentNode.data.rdf, SUBMISSION)">Submission: </template>{{ currentNode['text'] }}</h2>
         </div>
 
         <div class="tabs">
@@ -65,16 +56,47 @@
 
         <div class="content">
           <div v-if="activetab === 1" class="tabcontent">
-              <img v-if="isimage" :src="nodeurl" :key="getPath(currentNode)">
-              <template v-if="this.currentNode.data.metadata">
-                This spreadsheet file contains metadata for multiple items.
-                Push the <a class="btn-sm btn-info">Extract</a> button next to the file name to create an
-                RDF object that contains the extracted metadata. Upon ingest the metadata
-                will describe the appropriate objects in the repository.
+              <img v-if="isimage" :src="nodeurl" :key="getPath(currentNode)" class="img-fluid" style="padding-top: 5px; max-height: 500px">
+              <template v-if="is(currentNode.data.rdf, SUBMISSION)">
+                <p>Submission Package Status: <span style="color: green">Preparing</span></p>
+                <ol>
+                  <li>Drag and drop scanned page files onto the submission package icon or below<br />
+
+                    <div @drag.stop.prevent
+                    @dragstart.stop.prevent
+                    @dragend.stop.prevent
+                    @dragover.stop.prevent
+                    @dragenter.stop.prevent
+                    @dragleave.stop.prevent
+                    @drop.stop.prevent="drop($event, currentNode)" id="dropPad">
+                      <input type="file" name="files[]" id="file" class="box__file" data-multiple-caption="{count} files selected" multiple />
+                      <label for="file"><strong>Choose files</strong><span class="box__dragndrop"> or drag them here</span>.</label>
+                    </div>
+                  </li>
+                  <li>Upload an MD5 manifest (Excel file: ???_MD5.xslx).</li>
+                  <li>Wait for fixity calculations to complete..</li>
+                  <li>Review fixity status of uploaded files. (Red indicates an issue.)</li>
+                  <li>Upload a Dublin Core metadata (Excel file: ???_inventory.xslx).</li>
+                  <li>Do you expect to create <span style="color: green">{{ currentNode.data.docsExpected }}</span> documents with <span style="color: green">{{ currentNode.data.pages }}</span> pages in total?</li>
+                  <li>If so, click on <button @click="makePagedDocuments(currentNode.data.rdf.uri)">Make Documents</button> to create document structures.</li>
+                  <li>Review document structures</li>
+                  <li>All documents should be linked to a folder in the archival description.</li>
+                  <li>If this submission package is complete, click on <button @click="ingest()">Ingest</button> to make it official.</li>
+                </ol>
               </template>
-              <template v-if="this.currentNode.data.types.includes(RS.value) && this.currentNode.data.new">
-                <p><strong>Content (text/turtle)</strong></p>
-                <pre>{{ this.currentNode.data.turtle }}</pre>
+              <template v-else-if="is(currentNode.data.rdf, PCDM_OBJECT)">
+                <div>
+                <template v-for="(s, idx) in pcdmPageImages">
+                  <img height="50" :src="s" v-bind:key="idx" />
+                </template>
+                </div>
+                <p><strong><a v-bind:href="this.currentNode.data.rdf.uri">Raw content link (text/turtle)</a></strong></p>
+              </template>
+              <template v-else-if="is(currentNode.data.rdf, NRS)">
+                <p><strong><a target="_blank" v-bind:href="this.currentNode.data.rdf.uri">Raw file link</a></strong></p>
+              </template>
+              <template v-else-if="is(currentNode.data.rdf, RS)">
+                <p><strong><a v-bind:href="this.currentNode.data.rdf.uri">Raw content link (text/turtle)</a></strong></p>
               </template>
           </div>
           <div v-if="activetab === 2" class="tabcontent">
@@ -93,13 +115,46 @@
           <div v-if="activetab === 4" class="tabcontent">
             <div class="container">
               <p>TODO: use prefixes w/hover showing expanded URIs.</p>
-              <div v-for="s in rdfProps" :key="s[0]+s[1]" class="row">
+              <div v-for="(s, index) in rdfProps" v-bind:key="index" dfkey="s[0]+s[1]" class="row">
                 <div class="col-md-3">{{ s[0] }}</div>
                 <div class="col-md-9">{{ s[1] }}</div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+    <hr />
+    <div class="row mt-auto h-100 col-md-12 mb-3">
+      <div class="scroll col-md-12">
+        <h4>Actions</h4>
+        <table class="table table-hover">
+          <thead>
+            <tr>
+        <th tabindex="0" style="" data-field="id">
+          <div class="th-inner both">#</div>
+          <div class="fht-cell"></div>
+        </th>
+        <th tabindex="0" style="" data-field="name">
+          <div class="th-inner both">Type</div>
+          <div class="fht-cell"></div>
+        </th>
+        <th tabindex="0" style="" data-field="price">
+          <div class="th-inner both">Location</div>
+          <div class="fht-cell"></div>
+        </th>
+        <th tabindex="0" style="" data-field="price">
+          <div class="th-inner both">Progress</div>
+          <div class="fht-cell"></div>
+        </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(action, index) in ldpActions" v-bind:key="index">
+               <td>{{ index }}</td><td>{{ action.type }}</td><td>{{ action.uri }}</td><td><progress max="100" :value.prop="action.progress">{{ action.progress }}</progress></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -116,6 +171,8 @@ import filenames from '../assets/js/filenames'
 import sheet from '../assets/js/nps-sheets'
 
 const $rdf = require('rdflib');
+const posix = require('path-posix')
+const path = require('path');
 
 function alphaSort(a, b) {
   var x = a.text.toLowerCase();
@@ -133,113 +190,39 @@ function determineDragAndDropCapable() {
          && 'FileReader' in window;
 }
 
-// function buildUploadTree(rawfiles, node) {
-//   let uploads = [];
-//   let files = rawfiles.sort((a, b) => {
-//     return a.fullPath.localeCompare(b.fullPath)
-//   });
-//   for (var i = 0; i < files.length; i++) {
-//     var chain = files[i].fullPath.split('/');
-//     chain.shift();
-//     var currentNode = node;
-//
-//     // FIXME node:added events work only when adding file to empty folder
-//     for (var j = 0; j < chain.length; j++) {
-//         var wantedText = chain[j];
-//         var lastNode = currentNode;
-//         // find or insert required folders
-//         let newNode = {id: null, data: {new: true, types: [BC.value]}, text: wantedText, children: []};
-//         if(j == chain.length-1) { // last index is the file itself
-//           newNode.data.types = [NRS.value];
-//           newNode.data['file'] = files[i];
-//           newNode.data['uploadPercentage'] = 0;
-//         }
-//         for (var k = 0; k < currentNode.children.length; k++) {
-//             if (currentNode.children[k].data.text == wantedText) {
-//                 currentNode = currentNode.children[k];
-//                 break;
-//             } else if (currentNode.children[k].data.text.localeCompare(wantedText) > 0 ) {
-//                 currentNode.children[k].before(newNode);
-//                 currentNode = currentNode.children[k];
-//                 break;
-//             }
-//         }
-//         if (lastNode == currentNode) {
-//             currentNode = currentNode.append(newNode);
-//             let node_path = new Treehelp(currentNode).makePath(basepath).replace(/ /g,'_');
-//             var node_uri = ldp_baseurl + node_path
-//             if(currentNode.data.types.includes(BC.value)) {
-//               node_uri = node_uri + '/';
-//             }
-//             currentNode.data['rdf'] = store.sym(node_uri);
-//         }
-//     }
-//   }
-// }
-
-// function ingest(it, node) {
-//   let parent_path = new Treehelp(node.parent).makePath(basepath).replace(/ /g,'_');
-//   var parenturi = ldp_baseurl + parent_path + '/';
-//   console.log("building ingest req for "+node.data.text+" at "+parenturi);
-//   if(node.data.types.includes(BC.value)) {
-//     let head = {
-//       'Content-Type': 'application/ld+json',
-//       'Link': `<${BC.value}>; rel="type"`,
-//       'Slug': node.data.text
-//     };
-//     return it.$http({
-//         method: 'post',
-//         url: parenturi,
-//         headers: head
-//     }).then(resolve => {
-//       setTimeout(resolve, 200);
-//     });
-//   } else if(node.data.types.includes(NRS.value)) {
-//     let entry = node.data.file;
-//     return new Promise((resolve) => {
-//       entry.file((file) => { resolve(file) });
-//     }).then((file) => {
-//       it.$http.post( parenturi, file,
-//         { headers: {
-//           'Link': `<${NRS.value}>; rel="type"`,
-//           'Slug': encodeURIComponent(file.name.replace(/\|/g, '')).replace(/'/g, '%27'),
-//           'Content-Type': 'application/octet-stream'},
-//           onUploadProgress: function( progressEvent ) {
-//             node.data.uploadPercentage = parseInt( Math.round( ( progressEvent.loaded / progressEvent.total ) * 100 ));
-//           }.bind(it)
-//         }
-//       );
-//     }).catch( function(error) {
-//       node.data.failed = true;
-//       console.log('FAILURE!!', error);
-//     });
-//   } else if(node.data.types.includes(RS.value)) {
-//     if('turtle' in node.data) {
-//       it.$http.post( parenturi, node.data.turtle,
-//         { headers: {
-//           'Link': `${RS.value}; rel="type"`,
-//           'Slug': node.data.text,
-//           'Content-Type': 'text/turtle'},
-//           onUploadProgress: function( progressEvent ) {
-//             node.data.uploadPercentage = parseInt( Math.round( ( progressEvent.loaded / progressEvent.total ) * 100 ));
-//           }.bind(it)
-//         }
-//       );
-//     }
-//   }
-// }
-
 // Find keys in o1 that are missing in o2
 function differenceKeyset(o1, o2)
 {
     var differenceSet = new Set();
-    console.log(Object.keys(o1));
     Object.keys(o1).forEach( (key) => {
         if(!(key in o2)) {
           differenceSet.add(key);
         }
     });
     return differenceSet;
+}
+
+function Queue() {
+    this.elements = [];
+}
+Queue.prototype.enqueue = function (e) {
+    if(this.isEmpty()) {
+        this.elements.push(e);
+    } else if(this.elements[this.elements.length -1] != e) {
+        this.elements.push(e);
+    }
+};
+Queue.prototype.dequeue = function () {
+    return this.elements.shift();
+};
+Queue.prototype.isEmpty = function () {
+    return this.elements.length == 0;
+};
+Queue.prototype.peek = function () {
+    return !this.isEmpty() ? this.elements[0] : undefined;
+};
+Queue.prototype.length = function() {
+    return this.elements.length;
 }
 
 export default {
@@ -268,30 +251,56 @@ export default {
     this.NRS = this.LDP('NonRDFSource');
     this.BC = this.LDP('BasicContainer');
     this.PCDM = $rdf.Namespace('http://pcdm.org/models#');
+    this.PCDM_OBJECT = this.PCDM('Object');
+    this.IANA = $rdf.Namespace('http://www.iana.org/assignments/relation/');
+    this.ORE = $rdf.Namespace('http://www.openarchives.org/ore/terms/');
     this.DCE = $rdf.Namespace('http://purl.org/dc/elements/1.1/');
+    this.RDF = $rdf.Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+    this.NPS = $rdf.Namespace('https://example.nps.gov/2021/nps-workflow#');
+    this.SUBMISSION = this.NPS('submission');
+    this.PREMIS = $rdf.Namespace('http://www.loc.gov/standards/premis/rdf/v3/');
+    this.MD5 = $rdf.sym('http://id.loc.gov/vocabulary/cryptographicHashFunctions/md5');
     this.rdfStore = $rdf.graph();
     this.rdfFetcher = new $rdf.Fetcher(this.rdfStore);
     this.baseContainer = this.rdfStore.sym(this.ldpUrl + this.submissionsPath);
+    this.updateTimer = null;
+    this.updateQueue = new Queue();
     this.activityStreamWebSocket = new WebSocket(this.activityStreamWebSocketUrl);
     this.activityStreamWebSocket.onmessage = ({ data }) => {
       const activityMessage = JSON.parse(data);
-      this.updateTree(activityMessage)
-      // TODO log this event in UI list
+      // make update async and consolidate events
+      if(activityMessage.type[1] == "Update") {
+        var urlstr = activityMessage.object.id;
+        if(urlstr.indexOf('?') >= 0) {
+          urlstr = urlstr.substring(0, urlstr.indexOf('?'));
+        }
+        this.updateQueue.enqueue(urlstr);
+      }
     };
     this.activityStreamWebSocket.onopen = function(event) {
-      console.log(event)
-      console.log("Successfully connected to the echo websocket server...")
-    }
+      //console.log("Successfully connected to the activity stream websocket.")
+    };
     this.activityStreamWebSocket.onerror = function(event) {
       console.log(event)
       console.log("Error with websocket...")
-    }
+    };
   },
   mounted() {
     this.dragAndDropCapable = determineDragAndDropCapable();
     this.$refs.tree.$on("node:selected", this.focus);
-    // TODO move logic to server-side this.$refs.tree.$on("node:added", this.uploadAdded);
-    //this.$refs.tree.$on("node:added", this.uploadAdded);
+    let me = this;
+    this.$refs.tree.$on("tree:mounted", function(treecomponent) {
+      me.$refs.tree.model.forEach((c) => { me.calculateNodeData(c); });
+    });
+    this.$refs.tree.$on("tree:data:received", function(parentNode) {
+      me.calculateNodeData(parentNode);
+      parentNode.children.forEach((c) => { me.calculateNodeData(c); });
+    });
+    this.$refs.tree.$on("node:added", function(oldNode, newNode) {
+      let node = newNode && newNode.data.text ? newNode : oldNode;
+      me.calculateNodeData(node);
+    });
+    this.timer = setTimeout(this.processQueue, 5000);
   },
   computed: {
     crumbs: function() {
@@ -308,7 +317,7 @@ export default {
       return d.length > 0;
     },
     nodeurl: function() {
-      return this.baseContainer.uri + new Treehelp(this.currentNode).makePath(this.submissionsPath);
+      return this.ldpUrl + new Treehelp(this.currentNode).makePath(this.submissionsPath);
     },
     rdfProps: function () {
       let rdfdetails = this.rdfStore.statementsMatching(this.currentNode.data.rdf, undefined, undefined);
@@ -321,57 +330,199 @@ export default {
         }
       );
     },
+    pcdmPageImages: function() {
+      console.log('called');
+      let result = [];
+      let g = this.currentNode.data.rdf;
+      let first = this.rdfStore.any(this.currentNode.data.rdf, this.IANA('first'));
+      console.log('first '+ first);
+      for(let p = first; p != null; p = this.rdfStore.any(p, this.IANA('next'))) {
+        let page = this.rdfStore.any(p, this.ORE('proxyFor'));
+        let images = this.rdfStore.each(page, this.PCDM('hasFile'));
+        for(let i in images) {
+          console.log(images[i]);
+          if(images[i].value.endsWith('_ACCESS.png')) {
+            result.push(images[i].value);
+          }
+        }
+        if(images.length == 0) {
+          result.push("/missingimage.png")
+        }
+      }
+      return result;
+    },
     relatedObjectOf: function() {
       return this.rdfStore.each(this.currentNode.data.rdf, this.PCDM('relatedObjectOf'))[0];
     }
   },
   methods: {
+    is: function(rdfnode, type) {
+      let matches = this.rdfStore.statementsMatching(rdfnode, this.RDF('type'), type);
+      return matches.length > 0;
+    },
+    icon: function(rdfnode) {
+      if(this.is(rdfnode, this.SUBMISSION)) {
+        return 'archive';
+      } else if (this.is(rdfnode, this.BC)) {
+        return 'folder';
+      } else if (this.is(rdfnode, this.RS)) {
+        return 'layers';
+      } else {
+        return 'file';
+      }
+    },
+    fixitySeverity: function(rdfnode) {
+      if(this.fixityExists(rdfnode)) {
+        if(this.manifestFixityExists(rdfnode)) {
+          if(this.fixityValid(rdfnode)) {
+            return "info"
+          }
+        }
+        return "warn";
+      } else {
+        return "error";
+      }
+    },
+    fixityExists: function(rdfnode) {
+      let matches = this.rdfStore.statementsMatching(rdfnode, this.PREMIS('fixity'), undefined);
+      return matches.length > 0;
+    },
+    manifestFixityExists: function(rdfnode) {
+      this.rdfStore.each(rdfnode, this.PREMIS('fixity'), undefined)
+      .forEach(fixity => {
+        if(this.rdfStore.statementsMatching(fixity, this.DCE('source'), undefined) > 0) {
+          return true;
+        }
+      })
+      return false;
+    },
+    getManifestMD5: function(rdfnode) {
+      var result = null;
+      let fs = this.rdfStore.each(rdfnode, this.PREMIS('fixity'), undefined);
+      let graph = $rdf.sym(rdfnode.value+'?ext=description');
+      for(let f in fs) {
+        if(this.rdfStore.statementsMatching(fs[f], this.DCE('source'), undefined, graph).length == 0) {
+          continue;
+        }
+        if(this.rdfStore.statementsMatching(fs[f], this.RDF('type'), this.MD5, graph).length == 0) {
+          continue;
+        }
+        result = this.rdfStore.any(fs[f], this.RDF('value'), undefined, graph).value;
+        break;
+      }
+      return result;
+    },
+    getSystemMD5: function(rdfnode) {
+      var result = null;
+      let fs = this.rdfStore.each(rdfnode, this.PREMIS('fixity'), undefined);
+      let graph = $rdf.sym(rdfnode.value+'?ext=description');
+      for(let f in fs) {
+        let creator = this.rdfStore.any(fs[f], this.DCE('creator'), undefined, graph);
+        if(this.rdfStore.any(fs[f], this.DCE('creator'), undefined, graph).value != 'java.security.MessageDigest') {
+          continue;
+        }
+        if(this.rdfStore.statementsMatching(fs[f], this.RDF('type'), $rdf.sym('http://id.loc.gov/vocabulary/cryptographicHashFunctions/md5'), graph).length == 0) {
+          continue;
+        }
+        result = this.rdfStore.any(fs[f], this.RDF('value'), undefined, graph).toString();
+        break;
+      }
+      return result;
+    },
     fetchData: function(node) {
       let me = this;
       return new Promise(function (resolve) {
         var container = null;
         if(node.id == 'root') {  // get base node
-          container = me.rdfStore.sym(me.baseContainer.uri);
+          container = me.baseContainer;
         } else if('rdf' in node.data) {
-          container = me.rdfStore.sym(node.data.rdf.uri);
+          container = node.data.rdf;
         }
-        console.log(me.rdfStore);
         me.rdfFetcher.unload(container);
         me.rdfFetcher.load(container, {'force': true}).then(() => {
-          let result = me.makeViewData(node, container);
-          if(node.id == 'root') {
-            result.forEach((node) => {
-              node.data['isSubmission'] = true;
-            });
+          let contents = me.rdfStore.each(container, me.LDP('contains'));
+          let loadList = [];
+          for (var i=0; i<contents.length; i++) {
+            let loadLoc = contents[i].uri;
+            if(!loadLoc.endsWith('/')) {
+              loadList.push(loadLoc + "?ext=description");
+            } else {
+              loadList.push(loadLoc);
+            }
           }
-          resolve(result);
+          // TODO Some of these are files.. and need ?ext=description
+          me.rdfFetcher.load(loadList, {'force': true}).then(() => {
+            let result = [];
+            for (var i=0; i<contents.length; i++) {
+              let n = {id:null, data: { rdf: contents[i] } };
+              if(contents[i].uri.endsWith("/")) {
+                //n.data['types'] = [this.BC.value];
+                n['text'] = contents[i].uri.split('/').reverse()[1];
+                n['isBatch'] = true;
+              } else {
+                //n.data['types'] = [];
+                n['text'] = contents[i].uri.split('/').reverse()[0];
+                n['isBatch'] = true;
+              }
+              result.push(n);
+              me.subscribe(contents[i].uri);
+            }
+            result.sort(alphaSort);
+            me.subscribe(container.uri);
+            resolve(result);
+          });
         }).catch(e => console.log(e));
       });
     },
-    makeViewData: function(tree_node, container) {
-      let contents = this.rdfStore.each(container, this.LDP('contains'));
-      let result = [];
-      for (var i=0; i<contents.length; i++) {
-        let n = {id:null, data: { rdf: contents[i] } };
-        if(contents[i].uri.endsWith("/")) {
-          n.data['types'] = [this.BC.value];
-          n.data['new'] = false;
-          n['text'] = contents[i].uri.split('/').reverse()[1];
-          n['isBatch'] = true;
-        } else {
-          n.data['types'] = [];
-          n.data['new'] = false;
-          n['text'] = contents[i].uri.split('/').reverse()[0];
-        }
-        result.push(n);
+    calculateNodeData: function(node) {
+      if(node.id == 'root') return;
+      if(this.is(node.data.rdf, this.NRS)) {
+        console.log('updating '+node.data.text);
+        node.data['md5Manifest'] = this.getManifestMD5(node.data.rdf);
+        node.data['md5System'] = this.getSystemMD5(node.data.rdf);
       }
-      result.sort(alphaSort);
-      this.subscribe(container.uri);
-      return result;
+      if(this.is(node.data.rdf, this.SUBMISSION)) {
+        let data = this.submissionContent(node.data.rdf);
+        node.data['docsExpected'] = data[0];
+        node.data['docsActual'] = data[1];
+        node.data['pages'] = data[2];
+      }
+      let data = node.data;
+      node.data = data;
     },
-    updateTree: function(activityMessage) {
-      const url = new URL(activityMessage.object.id);
-      console.log("updating: "+url);
+    submissionContent: function(submission) {
+      let contents = this.rdfStore.each(submission, this.LDP('contains'));
+      var docsExpected = new Set();
+      var docsActual = 0;
+      var pages = 0;
+      for (var i=0; i<contents.length; i++) {
+        let c = contents[i];
+        if(this.is(c, this.NRS)) {
+          var name = c.uri.slice(c.uri.lastIndexOf('/')+1);
+          var fn = new filenames(name);
+          if(!fn.isSource()) continue;
+          var paths = fn.getDescriptionPaths();
+          if(paths.length == 0) continue;
+          let docPath = paths[1];
+          console.log('docpath: '+ docPath);
+          docsExpected.add(docPath);
+          pages += 1;
+        } else if (this.is(c, this.DOCUMENT)) {
+          docsActual += 1;
+        }
+      }
+      return [docsExpected.size, docsActual, pages];
+    },
+    processQueue: function() {
+      while(!this.updateQueue.isEmpty()) {
+        var next = this.updateQueue.dequeue();
+        this.updateNode(next);
+      }
+      this.timer = setTimeout(this.processQueue, 5000);
+    },
+    updateNode: function(urlstr) {
+      console.log('updateNode '+urlstr)
+      const url = new URL(urlstr);
       let relPath = url.pathname.substring(this.submissionsPath.length);
       let segments = relPath.split('/');
       if(relPath.endsWith('/')) {
@@ -379,49 +530,65 @@ export default {
       }
       let slug = segments.pop();
       let parentPath = segments.join('/');
-      switch(activityMessage.type[1]) {
-        case "Update":
-          if(relPath == "") { // tree root is special case
-            this.fetchData({'id': 'root'}).then((children) => {
-              var oldChildMap = {};
-              this.$refs.tree.tree.model.forEach((c) => { oldChildMap[c.data.text] = c });
-              var neuw = {};
-              children.forEach((c) => { neuw[c.text] = c });
-              differenceKeyset(oldChildMap, neuw).forEach((name) => {
-                console.log('removing '+name+' at root');
-                oldChildMap[name].remove();
-              })
-              differenceKeyset(neuw, oldChildMap).forEach((name) => {
-                console.log('adding '+name+' at root');
-                this.$refs.tree.addChild(neuw[name]);
-              })
-              this.$refs.tree.sortTree(alphaSort);
-            });
-          } else {
-            var vue = new Treehelp(this.$refs.tree).findVue(relPath);
-            var ltnode = vue.node;
-            console.log(ltnode);
-            this.fetchData(ltnode).then((children) => {
-              console.log(children);
-              var oldChildMap = {};
-              ltnode.children.forEach((c) => { oldChildMap[c.data.text] = c });
-              var neuw = {};
-              children.forEach((c) => { neuw[c.text] = c });
-              differenceKeyset(oldChildMap, neuw).forEach((name) => {
-                console.log('removing '+name+' at '+ltnode.data.text);
-                oldChildMap[name].remove();
-              })
-              differenceKeyset(neuw, oldChildMap).forEach((name) => {
-                console.log('adding '+name+' at '+ltnode.data.text);
-                ltnode.addChild(neuw[name]);
-              })
-              let data = ltnode.data;
-              ltnode.data = data;
-              this.$refs.tree.sortTree(alphaSort);
-            });
-          }
-          break;
+      let rdfnode = null;
+      let ltnode = null;
+      let oldChildMap = {};
+      if(relPath == "") { // tree root is special case
+        ltnode = this.$refs.tree;
+        rdfnode = this.baseContainer;
+        this.$refs.tree.tree.model.forEach((c) => { oldChildMap[c.data.text] = c });
+      } else {
+        console.log("relpath "+relPath)
+        console.log("vuenode");
+        console.log(new Treehelp(this.$refs.tree).findVue(relPath));
+        ltnode = new Treehelp(this.$refs.tree).findVue(relPath).node;
+        rdfnode = ltnode.data.rdf;
+        ltnode.children.forEach((c) => { oldChildMap[c.data.text] = c });
       }
+      let loadList = [];
+      if(!rdfnode.uri.endsWith('/')) {
+        loadList.push(rdfnode.uri + "?ext=description");
+      } else {
+        loadList.push(rdfnode.uri);
+      }
+      for(let x in loadList) { this.rdfFetcher.unload($rdf.sym(loadList[x])); }
+      this.rdfFetcher.load(loadList, {'force': true}).then(() => {
+        if(relPath != "") {
+          this.calculateNodeData(ltnode);
+        }
+        let data = ltnode.data;
+        ltnode.data = data;
+        let contents = this.rdfStore.each(rdfnode, this.LDP('contains'));
+        var neuw = {};
+        for (var i=0; i<contents.length; i++) {
+          let c = {id:null, data: { rdf: contents[i] }};
+          if(contents[i].uri.endsWith("/")) {
+            c['text'] = contents[i].uri.split('/').reverse()[1];
+            c['isBatch'] = true;
+          } else {
+            c['text'] = contents[i].uri.split('/').reverse()[0];
+            c['isBatch'] = true;
+          }
+          neuw[c.text] = c;
+        }
+        differenceKeyset(oldChildMap, neuw).forEach((name) => {
+          oldChildMap[name].remove();
+        });
+        differenceKeyset(neuw, oldChildMap).forEach((name) => {
+          let uri = neuw[name].data.rdf.uri;
+          this.subscribe(uri);
+          let loadChildList = [];
+          if(!uri.endsWith('/')) {
+            loadChildList.push(uri + "?ext=description");
+          } else {
+            loadChildList.push(uri);
+          }
+          this.rdfFetcher.load(loadChildList, {'force': true}).then(() => {
+            ltnode.addChild(neuw[name]);
+            this.$refs.tree.sortTree(alphaSort);
+          });
+        });
+      });
     },
     enqueueIngests: function(rawfiles, node) {
       let ingests = [];
@@ -430,32 +597,70 @@ export default {
         return a.fullPath.localeCompare(b.fullPath)
       });
       for (var i = 0; i < files.length; i++) {
-        var chain = files[i].fullPath.split('/');
+        var chain = files[i].fullPath.split(path.sep);  // TODO test Win32 paths
         chain.shift();
         var currentNode = node;
         for (var j = 0; j < chain.length; j++) {
-            var lastNode = currentNode;
             var slug = chain[j];
-            let path = new Treehelp(currentNode).makePath(this.submissionsPath).replace(/ /g,'_');
-            var parenturi = this.ldpUrl + path + '/';
-            var newuri = parenturi+slug;
+            let ldpPath = new Treehelp(currentNode).makePath(this.submissionsPath).replace(/ /g,'_');
+            let ingestRelPath = chain.slice(0, j).join('/');
+            var parenturi = this.ldpUrl + posix.join(ldpPath, ingestRelPath);
+            var newuri = this.ldpUrl + posix.join(ldpPath, ingestRelPath, slug);
             if(j == chain.length-1) { // last index is the file itself
-              // this is a file
-              let ingest = {parent_uri: parenturi, types: [this.BC.value], slug: slug};
-              ingest.types = [this.NRS.value];
-              ingest['file'] = files[i];
-              // TODO ingest the file
+              this.uploadFile(parenturi, slug, files[i]);
             } else {
               // this is a container
               if(folders[newuri]) {
                 continue;
               } else {
                 folders[newuri] = true;
-                // TODO ingest the folder
+                this.createFolder(parenturi, slug);
               }
             }
         }
       }
+    },
+    uploadFile: function(parenturi, slug, file) {
+      //console.log("building ingest req for "+slug+" at "+parenturi);
+      var action = {'type': 'Upload', 'uri': parenturi+'/'+slug, 'progress': 0, 'error': null};
+      this.ldpActions.push(action);
+      return new Promise((resolve) => {
+        file.file((file) => { resolve(file) });
+      }).then((file) => {
+        this.$http.post( parenturi, file,
+          { headers: {
+            'Link': `<${this.NRS.value}>; rel="type"`,
+            'Slug': encodeURIComponent(file.name.replace(/\|/g, '')).replace(/'/g, '%27'),
+            'Content-Type': 'application/octet-stream'},
+            onUploadProgress: function( progressEvent ) {
+              action.progress = parseInt( Math.round( ( progressEvent.loaded / progressEvent.total ) * 100 ));
+            }.bind(this)
+          }
+        );
+      }).catch( function(error) {
+        action.error = error;
+        console.log('FAILURE!!', error);
+      });
+    },
+    createFolder: function(parenturi, slug) {
+      var action = {'type': 'Create Folder', 'uri': parenturi+slug, 'progress': 0, 'error': null};
+      this.ldpActions.push(action);
+      let head = {
+         'Content-Type': 'application/ld+json',
+         'Link': `<${this.BC.value}>; rel="type"`,
+         'Slug': slug
+       };
+       this.$http({
+           method: 'post',
+           url: parenturi,
+           headers: head
+       }).then(resolve => {
+         setTimeout(resolve, 200);
+         action.progress = 100;
+       }).catch( function(error) {
+         action.error = error;
+         console.log('FAILURE!!', error);
+       });
     },
     drop: async function(e, node) {
       node.expand();
@@ -463,7 +668,7 @@ export default {
       this.enqueueIngests(files, node);
     },
     focus: async function(oldNode, newNode) {
-      let node = newNode && newNode.text ? newNode : oldNode
+      let node = newNode && newNode.data.text ? newNode : oldNode
       this.currentNode = node;
       for(let s = node; s != undefined; s = s.parent) {
         if(s.data.isSubmission == true) {
@@ -471,14 +676,19 @@ export default {
           break;
         }
       }
-      //let uri = store.sym(base_container.uri + new Treehelp(node).makePath(basepath));
-      //fetcher.load(uri).then(() => {
-      //  this.rdfdetails = store.statementsMatching(uri, undefined, undefined);
-      //}).catch(e => console.log(e));
     },
-    subscribe: async function(uri) {
-      console.log('subscribe called for: '+uri)
-      this.activityStreamWebSocket.send(JSON.stringify({subscribe: uri}))
+    makePagedDocuments: function(uri) {
+      return new Promise(() => {
+        this.activityStreamWebSocket.send(JSON.stringify({makePagedDocuments: uri}));
+      });
+    },
+    subscribe: function(uri) {
+      return new Promise(() => {
+        this.activityStreamWebSocket.send(JSON.stringify({subscribe: uri}));
+        if(!uri.endsWith('/')) {
+          this.activityStreamWebSocket.send(JSON.stringify({subscribe: uri+'?ext=description'}));
+        }
+      });
     },
     uploadAdded: async function(parent, newnode) {
       console.log(newnode)
@@ -517,26 +727,6 @@ export default {
         }
       }
     },
-    // uploadFiles(node) {
-    //   // build array of all new folders and files in order.
-    //   // ingest folders and files in order.
-    //   var q = new Promise(() => { console.log("Ingest starting..." )});
-    //   var counter = 0;
-    //   let lt = new Treehelp(node);
-    //   lt.depthFirstChildren().forEach( child => {
-    //     if(child.data.new) {
-    //       let p = this.ingest(this, child);
-    //       q = q.then(p);
-    //       q.then(() => {
-    //         counter++;
-    //       });
-    //     }
-    //   });
-    //   q.then(() => {
-    //     submissionHasUploads(node, false);
-    //     console.log(counter+" objects ingested.");
-    //   });
-    // },
     getPath(node) {
       return new Treehelp(node).makePath();
     },
@@ -566,7 +756,9 @@ export default {
         onFetchError(error) {
           console.error(error)
         }
-      }
+      },
+      ldpActions: [],
+      ldpActionFields: [ 'type', 'uri', 'progress' ]
     }
   }
 }
@@ -581,15 +773,18 @@ ul {
   list-style-type: none;
   padding: 0;
 }
-li {
+/* li {
   display: inline-block;
   margin: 0 10px;
-}
+} */
 a {
   color: #42b983;
 }
 a.btn-info {
   color: #ffffff;
+}
+table td, table th {
+  padding: 0px;
 }
 .feather {
   width: 24px;
@@ -604,6 +799,22 @@ form {
   margin: 0px;
   padding: 0px;
   border: 0px;
+}
+
+div#dropPad
+{
+  font-size: 1.25rem; /* 20 */
+  background-color: #c8dadf;
+  position: relative;
+  padding: 100px 20px;
+}
+div#dropPad
+{
+  text-align: center;
+  outline: 2px dashed #92b0b3;
+  outline-offset: -10px;
+  -webkit-transition: outline-offset .15s ease-in-out, background-color .15s linear;
+  transition: outline-offset .15s ease-in-out, background-color .15s linear;
 }
 
 span.new {

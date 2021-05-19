@@ -46,10 +46,10 @@
     </ul>
   </nav>
 
-  <div class="container-fluid">
-    <div class="row">
+  <div class="container-fluid h-100">
+    <div class="row h-100">
       <main role="main" class="col-md-12 ml-sm-auto col-lg-12 px-4">
-        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <div class="h-100 d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
           <router-view />
         </div>
       </main>
@@ -71,6 +71,10 @@ export default {
 </script>
 
 <style>
+html, body, #main {
+  height: 100%;
+}
+
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -79,6 +83,7 @@ export default {
   color: #2c3e50;
   padding: 0px;
   padding-top: 40px;
+  height: 100%;
 }
 div.folderview {
   width: auto;

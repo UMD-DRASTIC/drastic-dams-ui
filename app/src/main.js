@@ -1,4 +1,4 @@
-import Vue, { createApp } from 'vue';
+import Vue from 'vue';
 import 'bootstrap'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import axios from 'axios'
@@ -12,10 +12,14 @@ import Dashboard from './components/dashboard'
 import Description from './components/description'
 import Submissions from './components/submissions'
 
-const config = new Configuration();
+require('dotenv').config()
+console.log(process.env)
+
+const config = new Configuration(process.env);
 //const baseURL = config.value('baseURL');
 const ldpURL = config.value('ldpURL');
-const activityStreamWebSocketURL = config.value('activityStreamWebSocketURL');
+const asWebSocketURL = config.value('asWebSocketURL');
+
 const routes = [
     {
         path: '/dashboard',
@@ -32,8 +36,8 @@ const routes = [
         name: 'Submissions',
         component: Submissions,
         props: {
-          activityStreamWebSocketUrl: activityStreamWebSocketURL,
-          ldpUrl: ldpURL,
+          asWebSocketURL: asWebSocketURL,
+          ldpURL: ldpURL,
           submissionsPath: '/submissions/'
         }
     }
@@ -45,5 +49,10 @@ const router = new VueRouter({
 
 Vue.use(VueAxios, axios);
 Vue.use(VueFeather);
+Vue.use(VueRouter)
 Vue.component("CreateSubmission", CreateSubmission);
-createApp(App).use(router).mount('#app')
+
+new Vue({
+  router,
+  render: h => h(App)
+}).$mount("#app");

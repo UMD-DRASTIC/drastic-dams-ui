@@ -4,8 +4,9 @@
     <router-link class="navbar-brand col-sm-1 col-md-1 mr-0" to="/dashboard">
       <feather size="1.1em" type="home"></feather> Home
     </router-link>
-    <input class="form-control form-control-dark col-md-2" type="text" placeholder="Search" aria-label="Search">
-
+    <div class="col-md-2">
+      <input class="form-control form-control-dark" type="text" placeholder="Search" aria-label="Search">
+    </div>
     <ul class="nav nav-pills nav-fill col-md-9 px-3">
       <li class="nav-item text-nowrap">
 

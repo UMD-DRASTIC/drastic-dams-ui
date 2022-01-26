@@ -1,6 +1,4 @@
-import dotenv from 'dotenv';
-
-function ConfigProvider() {
+function ConfigProvider(env) {
   var about = {
      Version: 0.1,
      Author: "Greg Jansen",
@@ -8,13 +6,13 @@ function ConfigProvider() {
      Updated: "Fall 2020"
   };
   if (window === this) {
-    return new ConfigProvider();
+    return new ConfigProvider(env);
   }
-  dotenv.config();
+  this.process_env = env
   this.CONFIG = {
     baseURL: '$VUE_APP_BASE_URL',
-    trellisURL: '$VUE_APP_TRELLIS_URL',
-    activityStreamWebSocketURL: '$VUE_APP_AS_WEBSOCKET_URL',
+    ldpURL: '$VUE_APP_LDP_URL',
+    asWebSocketURL: '$VUE_APP_AS_WEBSOCKET_URL',
   };
   if(this.CONFIG) {
     return this;
@@ -37,7 +35,7 @@ ConfigProvider.prototype = {
 
     if (value.startsWith('$VUE_APP_')) {
       const envName = value.substr(1);
-      const envValue = process.env[envName];
+      const envValue = this.process_env[envName];
       if (envValue) {
         return envValue;
       } else {

@@ -228,11 +228,11 @@ Queue.prototype.length = function() {
 export default {
   name: 'Submissions',
   props: {
-    activityStreamWebSocketUrl: {  // like 'ws://localhost:9090/notifier'
+    asWebSocketURL: {  // like 'ws://localhost:9090/notifier'
       required: true,
       type: String,
     },
-    ldpUrl: {  // like 'http://localhost:9090';
+    ldpURL: {  // like 'http://localhost:9090';
       required: true,
       type: String
     },
@@ -262,10 +262,10 @@ export default {
     this.MD5 = $rdf.sym('http://id.loc.gov/vocabulary/cryptographicHashFunctions/md5');
     this.rdfStore = $rdf.graph();
     this.rdfFetcher = new $rdf.Fetcher(this.rdfStore);
-    this.baseContainer = this.rdfStore.sym(this.ldpUrl + this.submissionsPath);
+    this.baseContainer = this.rdfStore.sym(this.ldpURL + this.submissionsPath);
     this.updateTimer = null;
     this.updateQueue = new Queue();
-    this.activityStreamWebSocket = new WebSocket(this.activityStreamWebSocketUrl);
+    this.activityStreamWebSocket = new WebSocket(this.asWebSocketURL);
     this.activityStreamWebSocket.onmessage = ({ data }) => {
       const activityMessage = JSON.parse(data);
       // make update async and consolidate events

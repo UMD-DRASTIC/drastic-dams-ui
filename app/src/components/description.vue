@@ -21,7 +21,7 @@
     <div id="tabs" class="col-md-8" v-if="rdfdetails && rdfdetails.length > 0">
       <div class="container">
          <span v-for="(c, index) in crumbs" :key="index" class="crumb">
-           >> {{ c }}
+         {{ c }} »
          </span>
       </div>
       <div class="tabs">
@@ -32,14 +32,14 @@
       <div class="content">
           <div v-if="activetab === 1" class="tabcontent">
             <div v-for="s in icmsProps" :key="s[0]+s[1]" class="row">
-              <div class="col-md-4">{{ s[0] }}</div>
+              <div class="label col-md-4">{{ s[0] }}</div>
               <div class="col-md-8">{{ s[1] }}</div>
             </div>
           </div>
           <div v-if="activetab === 3" class="tabcontent">
             <div v-for="s in systemProps" :key="s[0]+s[1]" class="row">
-              <div class="col-md-6">{{ s[0] }}</div>
-              <div class="col-md-6">{{ s[1] }}</div>
+              <div class="label col-md-6">{{ s[0] }}</div>
+              <div class="label col-md-6">{{ s[1] }}</div>
             </div>
           </div>
       </div>
@@ -126,7 +126,6 @@ export default {
     icmsProps: function () {
       return this.rdfdetails.filter(s => re_icms.test(s.predicate)).map(
         v => {
-          console.log(v);
           let result = [];
           result[0] = String(v.predicate).match(re_icms)[1];
           result[1] = v.object;
@@ -147,6 +146,8 @@ export default {
     crumbs: function() {
       let segs = this.currentpath.split('/');
       segs.pop();
+      segs.shift();
+      segs.shift();
       return segs;
     }
   },
@@ -202,6 +203,10 @@ a {
 span.crumb {
   font-weight: bolder;
   font-size: larger;
+}
+
+div.label {
+  overflow-wrap: break-word;
 }
 
 

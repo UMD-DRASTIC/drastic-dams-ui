@@ -1,5 +1,17 @@
 # drastic-dams
 
+## LDP Preparation
+
+The DAMS UI expects certain folders to exist on startup. So we have to create them.
+
+```
+curl -X POST \
+     -H "Link: <http://www.w3.org/ns/ldp#BasicContainer>; rel=\"type\"" \
+     -H "Content-Type: text/turtle" \
+     -H "Slug: submissions" \
+     http://localhost:9090
+```
+
 ## Project setup
 ```
 npm install

@@ -2,7 +2,47 @@
   <div class="container-fluid d-flex flex-column h-100">
     <div class="row">
       <h2>Submissions</h2>
-      <div style="padding-left: 5em">&nbsp;&nbsp;&nbsp;&nbsp;<CreateSubmission /></div>
+      <div style="padding-left: 5em">
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <div style='display: inline'>
+        <button id="show-modal" @click="showCreateModal = true; setCreateFocus();">Create Submission</button>
+        <transition name="modal" v-if="showCreateModal" @close="showCreateModal = false">
+          <div class="modal-mask">
+            <div class="modal-wrapper">
+              <div class="modal-container">
+
+                <div class="modal-header">
+                  <slot name="header">
+                    Create Submission
+                  </slot>
+                </div>
+
+                <div class="modal-body">
+                  <div v-if="isCreateError">error</div>
+                  <div v-else-if="isCreateLoading">loading</div>
+                  <div v-else>
+                    <form v-on:submit="createSubmission(createSubmissionName); showCreateModal = false;">
+                      <input ref="submissionNameInput" v-model="createSubmissionName" :placeholder="'enter submission name..'">
+                    </form>
+                  </div>
+                </div>
+
+                <div class="modal-footer">
+                  <slot name="footer">
+                    <button class="modal-default-button" @click="showCreateModal = false">
+                      CANCEL
+                    </button>
+                    <button class="modal-default-button" @click="createSubmission(createSubmissionName); showCreateModal = false;">
+                      OK
+                    </button>
+                  </slot>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+        </div>
+      </div>
     </div>
     <div class="row h-70">
       <div class="col-md-6 overflow-auto" style="overflow-y: scroll; height: 700px">
@@ -317,7 +357,7 @@ export default {
       return d.length > 0;
     },
     nodeurl: function() {
-      return this.ldpUrl + new Treehelp(this.currentNode).makePath(this.submissionsPath);
+      return this.ldpURL + new Treehelp(this.currentNode).makePath(this.submissionsPath);
     },
     rdfProps: function () {
       let rdfdetails = this.rdfStore.statementsMatching(this.currentNode.data.rdf, undefined, undefined);
@@ -356,6 +396,28 @@ export default {
     }
   },
   methods: {
+    setCreateFocus: function() {
+      this.$nextTick(() => this.$refs.submissionNameInput.focus());
+    },
+    createSubmission: async function(name) {
+      try {
+        this.isCreateLoading = true;
+        let head = {
+          'Content-Type': 'text/turtle',
+          'Link': `<${ this.BC.value }>; rel="type"`,
+          'Slug': name
+        };
+        await this.$http.post(this.ldpURL + this.submissionsPath,
+          `<> a <${this.NPS('submission').value}> .`,
+          { headers: head }
+        );
+      } catch(err) {
+        console.log(err);
+        this.isCreateError = true;
+      } finally {
+        this.isCreateLoading = false;
+      }
+    },
     is: function(rdfnode, type) {
       let matches = this.rdfStore.statementsMatching(rdfnode, this.RDF('type'), type);
       return matches.length > 0;
@@ -604,8 +666,8 @@ export default {
             var slug = chain[j];
             let ldpPath = new Treehelp(currentNode).makePath(this.submissionsPath).replace(/ /g,'_');
             let ingestRelPath = chain.slice(0, j).join('/');
-            var parenturi = this.ldpUrl + posix.join(ldpPath, ingestRelPath);
-            var newuri = this.ldpUrl + posix.join(ldpPath, ingestRelPath, slug);
+            var parenturi = this.ldpURL + posix.join(ldpPath, ingestRelPath);
+            var newuri = this.ldpURL + posix.join(ldpPath, ingestRelPath, slug);
             if(j == chain.length-1) { // last index is the file itself
               this.uploadFile(parenturi, slug, files[i]);
             } else {
@@ -621,7 +683,7 @@ export default {
       }
     },
     uploadFile: function(parenturi, slug, file) {
-      //console.log("building ingest req for "+slug+" at "+parenturi);
+      console.log("building ingest req for "+slug+" at "+parenturi);
       var action = {'type': 'Upload', 'uri': parenturi+'/'+slug, 'progress': 0, 'error': null};
       this.ldpActions.push(action);
       return new Promise((resolve) => {
@@ -708,7 +770,7 @@ export default {
         let paths = fn.getDescriptionPaths();
         let result = null;
         for( let i = 0; i < paths.length; i++) {
-          let base_container = this.rdfStore.sym(this.ldpUrl);
+          let base_container = this.rdfStore.sym(this.ldpURL);
           let desc = this.rdfStore.sym(base_container.uri + '/description' + paths[i]);
           await this.rdfFetcher.load(desc).then(() => {
             result = desc;
@@ -731,15 +793,19 @@ export default {
       return new Treehelp(node).makePath();
     },
     harvestDCSheet(node) {
-      let dcuri = this.ldpUrl + '/submissions/' + this.getPath(node) + '/' + 'Extracted-Dublin-Core';
+      let dcuri = this.ldpURL + '/submissions/' + this.getPath(node) + '/' + 'Extracted-Dublin-Core';
       node.expand();
-      let turtle = node.data.sheet.harvestDC(this.ldpUrl+'/description/');
+      let turtle = node.data.sheet.harvestDC(this.ldpURL+'/description/');
       let newNode = {id: null, data: {new: true, types: [this.RS.value], turtle: turtle }, text: "Extracted-Dublin-Core"};
       node.append(newNode);
     }
   },
   data: function() {
     return {
+      showCreateModal: false,
+      createSubmissionName: '',
+      isCreateLoading: false,
+      isCreateError: false,
       dragAndDropCapable: false,
       currentNode: undefined,
       currentSubmission: undefined,
@@ -819,5 +885,46 @@ div#dropPad
 
 span.new {
   color: green;
+}
+
+.modal-mask {
+  position: fixed;
+  z-index: 9998;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: table;
+  transition: opacity 0.3s ease;
+}
+
+.modal-wrapper {
+  display: table-cell;
+  vertical-align: middle;
+}
+
+.modal-container {
+  width: 80vmin;
+  margin: 0px auto;
+  padding: 20px 30px;
+  background-color: #fff;
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
+  transition: all 0.3s ease;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+.modal-header h3 {
+  margin-top: 0;
+  color: #42b983;
+}
+
+.modal-body {
+  margin: 20px 0;
+}
+
+.modal-default-button {
+  float: right;
 }
 </style>

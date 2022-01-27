@@ -13,8 +13,6 @@ import Description from './components/description'
 import Submissions from './components/submissions'
 
 require('dotenv').config()
-console.log(process.env)
-
 const config = new Configuration(process.env);
 //const baseURL = config.value('baseURL');
 const ldpURL = config.value('ldpURL');

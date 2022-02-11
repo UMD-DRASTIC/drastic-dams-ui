@@ -87,7 +87,7 @@
           <h2><template v-if="is(currentNode.data.rdf, SUBMISSION)">Submission: </template>{{ currentNode['text'] }}</h2>
         </div>
 
-        <div class="tabs">
+        <div class="tabs flex-column">
           <a v-on:click="activetab=1" v-bind:class="[ activetab === 1 ? 'active' : '' ]">View</a>
           <a v-on:click="activetab=2" v-bind:class="[ activetab === 2 ? 'active' : '' ]">Description</a>
           <a v-on:click="activetab=3" v-bind:class="[ activetab === 3 ? 'active' : '' ]">Provenance</a>
@@ -409,7 +409,8 @@ export default {
         };
         await this.$http.post(this.ldpURL + this.submissionsPath,
           `<> a <${this.NPS('submission').value}> .`,
-          { headers: head }
+          { headers: head,
+            withCredentials: true }
         );
       } catch(err) {
         console.log(err);
@@ -690,7 +691,8 @@ export default {
         file.file((file) => { resolve(file) });
       }).then((file) => {
         this.$http.post( parenturi, file,
-          { headers: {
+          { withCredentials: true,
+            headers: {
             'Link': `<${this.NRS.value}>; rel="type"`,
             'Slug': encodeURIComponent(file.name.replace(/\|/g, '')).replace(/'/g, '%27'),
             'Content-Type': 'application/octet-stream'},
@@ -715,7 +717,8 @@ export default {
        this.$http({
            method: 'post',
            url: parenturi,
-           headers: head
+           headers: head,
+           withCredentials: true
        }).then(resolve => {
          setTimeout(resolve, 200);
          action.progress = 100;

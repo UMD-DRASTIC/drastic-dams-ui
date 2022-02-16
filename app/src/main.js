@@ -17,6 +17,8 @@ const config = new Configuration(process.env);
 //const baseURL = config.value('baseURL');
 const ldpURL = config.value('ldpURL');
 const asWebSocketURL = config.value('asWebSocketURL');
+const ldpUsername = config.value('ldpUsername');
+const ldpPassword = config.value('ldpPassword');
 
 const routes = [
     {
@@ -36,7 +38,9 @@ const routes = [
         props: {
           asWebSocketURL: asWebSocketURL,
           ldpURL: ldpURL,
-          submissionsPath: '/submissions/'
+          submissionsPath: '/submissions/',
+          ldpUsername: ldpUsername,
+          ldpPassword: ldpPassword,
         }
     }
 ]

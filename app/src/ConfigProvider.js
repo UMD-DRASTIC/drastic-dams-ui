@@ -13,6 +13,8 @@ function ConfigProvider(env) {
     baseURL: '$VUE_APP_BASE_URL',
     ldpURL: '$VUE_APP_LDP_URL',
     asWebSocketURL: '$VUE_APP_AS_WEBSOCKET_URL',
+    ldpUsername: '$VUE_APP_LDP_USERNAME',
+    ldpPassword: '$VUE_APP_LDP_PASSWORD',
   };
   if(this.CONFIG) {
     return this;

@@ -276,6 +276,14 @@ export default {
       required: true,
       type: String
     },
+    ldpUsername: {  // like 'http://localhost:9090';
+      required: true,
+      type: String
+    },
+    ldpPassword: {  // like 'http://localhost:9090';
+      required: true,
+      type: String
+    },
     submissionsPath: {
       type: String,
       default:  '/submissions/'
@@ -410,7 +418,12 @@ export default {
         await this.$http.post(this.ldpURL + this.submissionsPath,
           `<> a <${this.NPS('submission').value}> .`,
           { headers: head,
-            withCredentials: true }
+            withCredentials: true,
+            auth: {
+              username: this.ldpUsername,
+              password: this.ldpPassword
+            }
+          }
         );
       } catch(err) {
         console.log(err);
@@ -502,7 +515,12 @@ export default {
           container = node.data.rdf;
         }
         me.rdfFetcher.unload(container);
-        me.rdfFetcher.load(container, {'force': true}).then(() => {
+        me.rdfFetcher.load(container, {
+          force: true,
+          headers: { Prefer: 'return=representation; include="http://www.w3.org/ns/ldp#PreferContainment"',
+                     Accept: "text/turtle",
+                     'Cache-Control': 'no-cache' }
+          }).then(() => {
           let contents = me.rdfStore.each(container, me.LDP('contains'));
           let loadList = [];
           for (var i=0; i<contents.length; i++) {
@@ -514,7 +532,12 @@ export default {
             }
           }
           // TODO Some of these are files.. and need ?ext=description
-          me.rdfFetcher.load(loadList, {'force': true}).then(() => {
+          me.rdfFetcher.load(loadList, {
+            force: true,
+            headers: { Prefer: 'return=representation; include="http://www.w3.org/ns/ldp#PreferContainment"',
+                       Accept: "text/turtle",
+                       'Cache-Control': 'no-cache' }
+          }).then(() => {
             let result = [];
             for (var i=0; i<contents.length; i++) {
               let n = {id:null, data: { rdf: contents[i] } };
@@ -525,7 +548,8 @@ export default {
               } else {
                 //n.data['types'] = [];
                 n['text'] = contents[i].uri.split('/').reverse()[0];
-                n['isBatch'] = true;
+                n['children'] = [];
+                //n['isBatch'] = true;
               }
               result.push(n);
               me.subscribe(contents[i].uri);
@@ -615,7 +639,12 @@ export default {
         loadList.push(rdfnode.uri);
       }
       for(let x in loadList) { this.rdfFetcher.unload($rdf.sym(loadList[x])); }
-      this.rdfFetcher.load(loadList, {'force': true}).then(() => {
+      this.rdfFetcher.load(loadList, {
+        force: true,
+        headers: { Prefer: 'return=representation; include="http://www.w3.org/ns/ldp#PreferContainment"',
+                   Accept: "text/turtle",
+                   'Cache-Control': 'no-cache'  }
+      }).then(() => {
         if(relPath != "") {
           this.calculateNodeData(ltnode);
         }
@@ -646,7 +675,12 @@ export default {
           } else {
             loadChildList.push(uri);
           }
-          this.rdfFetcher.load(loadChildList, {'force': true}).then(() => {
+          this.rdfFetcher.load(loadChildList, {
+            force: true,
+            headers: { Prefer: 'return=representation; include="http://www.w3.org/ns/ldp#PreferContainment"',
+                       Accept: "text/turtle",
+                       'Cache-Control': 'no-cache' }
+          }).then(() => {
             ltnode.addChild(neuw[name]);
             this.$refs.tree.sortTree(alphaSort);
           });
@@ -692,6 +726,10 @@ export default {
       }).then((file) => {
         this.$http.post( parenturi, file,
           { withCredentials: true,
+            auth: {
+              username: this.ldpUsername,
+              password: this.ldpPassword
+            },
             headers: {
             'Link': `<${this.NRS.value}>; rel="type"`,
             'Slug': encodeURIComponent(file.name.replace(/\|/g, '')).replace(/'/g, '%27'),
@@ -718,7 +756,11 @@ export default {
            method: 'post',
            url: parenturi,
            headers: head,
-           withCredentials: true
+           withCredentials: true,
+           auth: {
+             username: this.ldpUsername,
+             password: this.ldpPassword
+           }
        }).then(resolve => {
          setTimeout(resolve, 200);
          action.progress = 100;

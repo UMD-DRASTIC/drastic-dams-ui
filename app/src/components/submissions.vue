@@ -534,8 +534,7 @@ export default {
           // TODO Some of these are files.. and need ?ext=description
           me.rdfFetcher.load(loadList, {
             force: true,
-            headers: { Prefer: 'return=representation; include="http://www.w3.org/ns/ldp#PreferContainment"',
-                       Accept: "text/turtle",
+            headers: { Accept: "text/turtle",
                        'Cache-Control': 'no-cache' }
           }).then(() => {
             let result = [];
@@ -633,17 +632,18 @@ export default {
         ltnode.children.forEach((c) => { oldChildMap[c.data.text] = c });
       }
       let loadList = [];
+      let myheaders = { Accept: "text/turtle",
+                  'Cache-Control': 'no-cache' };
       if(!rdfnode.uri.endsWith('/')) {
         loadList.push(rdfnode.uri + "?ext=description");
       } else {
+        myheaders['Prefer'] = 'return=representation; include="http://www.w3.org/ns/ldp#PreferContainment"';
         loadList.push(rdfnode.uri);
       }
       for(let x in loadList) { this.rdfFetcher.unload($rdf.sym(loadList[x])); }
       this.rdfFetcher.load(loadList, {
         force: true,
-        headers: { Prefer: 'return=representation; include="http://www.w3.org/ns/ldp#PreferContainment"',
-                   Accept: "text/turtle",
-                   'Cache-Control': 'no-cache'  }
+        headers: myheaders
       }).then(() => {
         if(relPath != "") {
           this.calculateNodeData(ltnode);
@@ -659,7 +659,8 @@ export default {
             c['isBatch'] = true;
           } else {
             c['text'] = contents[i].uri.split('/').reverse()[0];
-            c['isBatch'] = true;
+            c['children'] = [];
+            // c['isBatch'] = true;
           }
           neuw[c.text] = c;
         }

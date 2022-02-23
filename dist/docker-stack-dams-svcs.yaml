@@ -1,0 +1,139 @@
+version: '3.3'
+services:
+  cassandra-1:
+    image: cassandra
+    environment:
+      CASSANDRA_BROADCAST_ADDRESS: cassandra-1
+    networks:
+      - prototype
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+        window: 120s
+      placement:
+        constraints:
+        - node.labels.host==ciber-vs1
+    volumes:
+      - /export/testdata/nps/cassandra:/var/lib/cassandra
+      - /export/testdata/nps/cassandra.yaml:/etc/cassandra/cassandra.yaml
+
+  cassandra-2:
+    image: cassandra
+    environment:
+      CASSANDRA_BROADCAST_ADDRESS: cassandra-2
+      CASSANDRA_SEEDS: cassandra-1
+    depends_on:
+      - cassandra-1
+    networks:
+      - prototype
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+        window: 120s
+      placement:
+        constraints:
+        - node.labels.host==ciber-vs2
+    volumes:
+      - /export/testdata/nps/cassandra:/var/lib/cassandra
+      - /export/testdata/nps/cassandra.yaml:/etc/cassandra/cassandra.yaml
+
+  cassandra-3:
+    image: cassandra
+    environment:
+      CASSANDRA_BROADCAST_ADDRESS: cassandra-3
+      CASSANDRA_SEEDS: cassandra-1
+    depends_on:
+      - cassandra-1
+    networks:
+      - prototype
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+        window: 120s
+      placement:
+        constraints:
+        - node.labels.host==ciber-vs3
+    volumes:
+      - /export/testdata/nps/cassandra:/var/lib/cassandra
+      - /export/testdata/nps/cassandra.yaml:/etc/cassandra/cassandra.yaml
+
+  cassandra-init:
+    image: cassandra
+    depends_on:
+      - cassandra-1
+      - cassandra-2
+      - cassandra-3
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+      placement:
+        constraints:
+        - node.labels.host==ciber-vs1
+    volumes:
+      - /opt/dams:/config
+    command: cqlsh cassandra-1 -f /config/trellis.cql
+    networks:
+      - prototype
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - prototype
+
+  kafka:
+    image: wurstmeister/kafka:latest
+    ports:
+      - target: 9094
+        published: 9094
+        protocol: tcp
+    #    mode: host
+    deploy:
+        mode: global
+    networks:
+      - prototype
+    environment:
+      HOSTNAME_COMMAND: "docker info | grep ^Name: | cut -d' ' -f 2"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://_{HOSTNAME_COMMAND}:9094
+      KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  kafkacat:
+    image: confluentinc/cp-kafkacat
+    command: sleep infinity
+    networks:
+      - prototype
+
+  fuseki:
+    image: gregjan/fuseki:latest
+    command: [ "--tdb2", "--update", "--loc", "databases/DB2", "/ds" ]
+    ports:
+    ports:
+      - 3030:3030
+    deploy:
+      placement:
+        constraints:
+        - node.labels.host==ciber-vs3
+    volumes:
+      - /export/testdata/nps/fuseki:/fuseki/databases  # owned by uid 1000, gid 1000
+    networks:
+      - prototype
+
+configs:
+  cassandra_1.1:
+    file: ./cassandra1.yaml
+  cassandra_0.1:
+    file: ./cassandra.yaml
+
+networks:
+  prototype:
+    external: true

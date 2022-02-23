@@ -1,0 +1,53 @@
+version: '3.3'
+services:
+  dams:
+    image: gregjan/drastic-dams:0.1.15
+    networks:
+      prototype:
+    ports:
+      - 8080
+    environment:
+      VUE_APP_BASE_URL: https://drastic-testbed.umd.edu:8888
+      VUE_APP_LDP_URL: https://drastic-testbed.umd.edu:8889
+      VUE_APP_AS_WEBSOCKET_URL: wss://drastic-testbed.umd.edu:8889/notifier
+    env_file: dams_passwords
+  trellis:
+    image: gregjan/drastic-trellis-cassandra:0.1.27
+    deploy:
+      mode: replicated
+      replicas: 4
+    ports:
+      - 9090
+# Change ports to 8080 in prod mode?
+    environment:
+      QUARKUS_LOG_CONSOLE_LEVEL: DEBUG
+      TRELLIS_HTTP_BASE_URL: https://drastic-testbed.umd.edu:8889
+      TRELLIS_CASSANDRA_CONTACT_ADDRESS: cassandra-1
+      TRELLIS_CASSANDRA_CONTACT_PORT: 9042
+      TRELLIS_CASSANDRA_METRICS_DIR: "/metrics/{{.Task.Name}}"
+      MP_JWT_VERIFY_PUBLICKEY_LOCATION: "https://www.trellisldp.org/tests/jwks.json"
+      QUARKUS_PROFILE: "dev"
+      TRELLIS_HTTP_WEAK_ETAG: "false"
+      TRELLIS_HTTP_MEMENTO_HEADER_DATES: "false"
+      TRELLIS_HTTP_PRECONDITION_REQUIRED: "true"
+      TRELLIS_JDBC_LDP_TYPE: "true"
+      TRELLIS_TRIPLESTORE_QUERY_URL: "http://fuseki:3030/ds/query"
+      TRELLIS_TRIPLESTORE_UPDATE_URL: "http://fuseki:3030/ds/update"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      QUARKUS_HTTP_CORS: "true"
+      QUARKUS_HTTP_CORS_ORIGINS: "https://drastic-testbed.umd.edu:8888"
+      QUARKUS_HTTP_CORS_METHODS: "HEAD,OPTIONS,PATCH,GET,PUT,POST,DELETE"
+      QUARKUS_HTTP_CORS_EXPOSED_HEADERS: "Cache-Control,Content-Type,Link,Memento-Datetime,Preference-Applied,Location,Accept-Patch,Accept-Post,Accept-Ranges,ETag,Vary,WWW-Authenticate"
+      QUARKUS_HTTP_CORS_HEADERS: "Cache-Control,Content-Type,Link,Accept,Accept-Datetime,Authorization,Prefer,Slug"
+      QUARKUS_HTTP_CORS_ACCESS_CONTROL_ALLOW_CREDENTIALS: "true"
+      QUARKUS_HTTP_CORS_ACCESS_CONTROL_MAX_AGE: "24H"
+      QUARKUS_HTTP_LIMITS_MAX_BODY_SIZE: "10G"
+    networks:
+      - prototype
+    depends_on:
+      - cassandra-1
+      - kafka
+
+networks:
+  prototype:
+    external: true

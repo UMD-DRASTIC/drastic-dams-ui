@@ -46,6 +46,16 @@ const $rdf = require('rdflib');
 
 export default {
   name: 'CreateSubmission',
+  props: {
+    ldpURL: {  // like 'http://localhost:9090';
+      required: true,
+      type: String
+    },
+    submissionsPath: {
+      type: String,
+      default:  '/submissions/'
+    }
+  },
   data: function() {
     return {
       showModal: false,

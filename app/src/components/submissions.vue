@@ -58,7 +58,7 @@
                 @dragleave.stop.prevent
                 @drop.stop.prevent="drop($event, node)">
                 <template>
-                  <feather :type="icon(node.data.rdf)" />
+                  <span :class="icon(node.data.rdf)"></span>
                   &nbsp;&nbsp; {{ node.data.text }} &nbsp;&nbsp;
                   <template v-if="is(node.data.rdf, NRS) && node.data.rdf.value.endsWith('.tif')">
                     <span style="font-family: 'Courier New', monospace;">
@@ -79,7 +79,7 @@
       <div class="col-md-6" v-if="currentNode">
         <div class="container">
            <span v-for="(c, index) in crumbs" :key="crumbs.slice(0,index).join('/')" class="crumb">
-             {{ c }} <feather type="chevrons-right" />
+             {{ c }} <span class="fa-chevrons-right"></span>
            </span>
         </div>
 
@@ -438,13 +438,13 @@ export default {
     },
     icon: function(rdfnode) {
       if(this.is(rdfnode, this.SUBMISSION)) {
-        return 'archive';
+        return 'fa-box-archive fa-xl';
       } else if (this.is(rdfnode, this.BC)) {
-        return 'folder';
+        return 'fa-folder fa-xl';
       } else if (this.is(rdfnode, this.RS)) {
-        return 'layers';
+        return 'fa-layer-group fa-xl';
       } else {
-        return 'file';
+        return 'fa-file fa-xl';
       }
     },
     fixitySeverity: function(rdfnode) {
@@ -897,12 +897,6 @@ a.btn-info {
 }
 table td, table th {
   padding: 0px;
-}
-.feather {
-  width: 24px;
-  height: 24px;
-  margin-right: 10px;
-  vertical-align: text-bottom;
 }
 form {
   display: block;

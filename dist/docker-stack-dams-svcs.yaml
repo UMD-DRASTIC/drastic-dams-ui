@@ -128,6 +128,20 @@ services:
     networks:
       - prototype
 
+  elasticsearch:
+    image: elasticsearch:7.17.1
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms2g -Xmx2g
+    deploy:
+      placement:
+        constraints:
+        - node.labels.host==ciber-vs4
+    volumes:
+      - /export/testdata/nps/elasticsearch:/usr/share/elasticsearch/data
+    networks:
+      - prototype
+
 configs:
   cassandra_1.1:
     file: ./cassandra1.yaml

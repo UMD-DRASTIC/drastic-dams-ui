@@ -1,77 +1,63 @@
 <template>
-<div id="app" class="container-fluid">
+<div id="app" class="container-fluid"  style="background: gray">
   <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
-    <router-link class="navbar-brand col-sm-1 col-md-1 mr-0" to="/dashboard">
-      <feather size="1.1em" type="home"></feather> Home
-    </router-link>
-    <div class="col-md-2">
-      <input class="form-control form-control-dark" type="text" placeholder="Search" aria-label="Search">
-    </div>
     <ul class="nav nav-pills nav-fill col-md-9 px-3">
       <li class="nav-item text-nowrap">
-
+        <router-link class="nav-link" to="/access">
+          <font-awesome-icon icon="fa-search fa-xl" />
+          Access
+        </router-link>
       </li>
       <li class="nav-item text-nowrap">
         <router-link class="nav-link" to="/description">
-          <feather size="1.1em" type="archive"></feather>
-          Archival Desription <span class="sr-only">(current)</span>
+          <font-awesome-icon icon="fa-boxes-stacked fa-xl" />
+          Description
         </router-link>
       </li>
       <li class="nav-item text-nowrap">
         <router-link class="nav-link" to="/submissions">
-          <feather size="1.1em" type="inbox"></feather>
+          <font-awesome-icon icon="fa-people-carry-box fa-xl" />
           Submissions
         </router-link>
       </li>
       <li class="nav-item text-nowrap">
         <router-link class="nav-link" to="/destructions">
-          <feather size="1.1em" type="trash-2"></feather>
+          <font-awesome-icon icon="fa-trash-can fa-xl" />
           Destructions
         </router-link>
       </li>
       <li class="nav-item text-nowrap">
-        <router-link class="nav-link" to="/reports">
-          <feather size="1.1em" type="pie-chart"></feather>
-          Reports
+        <router-link class="nav-link" to="/dashboard">
+          <font-awesome-icon icon="fa-chart-pie fa-xl" />
+          Dashboard
         </router-link>
       </li>
       <li class="nav-item text-nowrap">
-        <router-link class="nav-link" to="/saved">
-          <feather size="1.1em" type="star"></feather>
-          Bookmarks
-        </router-link>
-      </li>
-      <li class="nav-item text-nowrap">
-        <a class="nav-link" href="#">Sign out</a>
+        <a class="nav-link" href="#">
+          <font-awesome-icon icon="fa-right-from-bracket fa-xl" />
+        </a>
       </li>
     </ul>
   </nav>
-
-  <div class="container-fluid h-100">
-    <div class="row h-100">
-      <main role="main" class="col-md-12 ml-sm-auto col-lg-12 px-4">
-        <div class="h-100 d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-          <router-view />
-        </div>
-      </main>
-    </div>
-  </div>
+  <main role="main">
+    <!-- <div class="h-100 d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"> -->
+    <!-- <div class="container-fluid h-100 px-0"> -->
+      <router-view />
+    <!-- </div> -->
+  </main>
 
 </div>
 </template>
 
 <script>
-import VueFeather from 'vue-feather';
-
 export default {
   name: 'app',
-  components: {
-    'feather': VueFeather
-  }
+  components: { }
 }
 </script>
 
 <style>
+@import "../node_modules/@elastic/react-search-ui-views/lib/styles/styles.css";
 html, body, #main {
   height: 100%;
 }
@@ -80,10 +66,10 @@ html, body, #main {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  //text-align: center;
+  text-align: center;
   color: #2c3e50;
   padding: 0px;
-  padding-top: 40px;
+  padding-top: 16px;
   height: 100%;
 }
 div.folderview {

@@ -208,7 +208,6 @@ import LiquorTree from 'liquor-tree'
 import dtransfers from '../assets/js/dtransfers.js'
 import Treehelp from '../assets/js/treehelp.js'
 import filenames from '../assets/js/filenames'
-import sheet from '../assets/js/nps-sheets'
 
 const $rdf = require('rdflib');
 const posix = require('path-posix')
@@ -798,53 +797,9 @@ export default {
         }
       });
     },
-    uploadAdded: async function(parent, newnode) {
-      console.log(newnode)
-      console.log(this.NRS.value)
-      if(newnode.data.types.includes(this.NRS.value) && newnode.data.new) {
-        console.log(newnode);
-        let fn = new filenames(newnode.data.file.name);
-
-        if(fn.isDCSheet()) {
-          let data = newnode.data;
-          data['metadata'] = true;
-          data.sheet = new sheet(newnode.data.file);
-          newnode.data = data;
-          newnode.data.sheet.loadWorkbook();
-        }
-        // Locate nearest existing finding aid object and add a pcdm:relatedObjectOf link.
-        let paths = fn.getDescriptionPaths();
-        let result = null;
-        for( let i = 0; i < paths.length; i++) {
-          let base_container = this.rdfStore.sym(this.ldpURL);
-          let desc = this.rdfStore.sym(base_container.uri + '/description' + paths[i]);
-          await this.rdfFetcher.load(desc).then(() => {
-            result = desc;
-          }).catch(() => {
-            console.log(paths[i]+ ' not found');
-          });
-          if (result != null) {
-            break;
-          }
-        }
-        if(result != null) {
-          let data = newnode.data;
-          this.rdfStore.add(data.rdf, this.PCDM('relatedObjectOf'), result);
-          data['linked'] = true;
-          newnode.data = data;
-        }
-      }
-    },
     getPath(node) {
       return new Treehelp(node).makePath();
     },
-    harvestDCSheet(node) {
-      let dcuri = this.ldpURL + '/submissions/' + this.getPath(node) + '/' + 'Extracted-Dublin-Core';
-      node.expand();
-      let turtle = node.data.sheet.harvestDC(this.ldpURL+'/description/');
-      let newNode = {id: null, data: {new: true, types: [this.RS.value], turtle: turtle }, text: "Extracted-Dublin-Core"};
-      node.append(newNode);
-    }
   },
   data: function() {
     return {

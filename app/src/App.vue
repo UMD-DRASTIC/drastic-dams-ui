@@ -57,7 +57,6 @@ export default {
 </script>
 
 <style>
-@import "../node_modules/@elastic/react-search-ui-views/lib/styles/styles.css";
 html, body, #main {
   height: 100%;
 }

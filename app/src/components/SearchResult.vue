@@ -1,6 +1,6 @@
 <template>
-  <article class="search-result">
-    <h2 class="search-result__heading">{{ result.title.raw }}</h2>
+  <div class="search-result">
+    <span class="search-result__heading">{{ result.title }}</span>
     <div class="search-result__body">
       <!-- <img
         class="search-result__image"
@@ -8,30 +8,11 @@
         :alt="result.title.raw"
       /> -->
       <div class="search-result__data">
-        <div v-if="result.level">Type: {{ result.level.raw }}</div>
-        <div v-if="result.path">Path: {{ result.path.raw }}</div>
-        <div v-else-if="result.card_class">
-          Class: {{ result.card_class.raw }}
-        </div>
-        <!-- <div>Set: {{ result.set.raw }}</div>
-        <div>Rarity: {{ result.rarity.raw }}</div> -->
-        <br />
-        <div v-if="result.cost">Cost: {{ result.cost.raw }}</div>
-        <div v-if="result.attack">Attack: {{ result.attack.raw }}</div>
-        <div v-if="result.durability">
-          Durability: {{ result.durability.raw }}
-        </div>
-        <div v-if="result.health">Health: {{ result.health.raw }}</div>
-        <div v-if="result.armor">Armor: {{ result.armor.raw }}</div>
-        <div v-if="result.spell_damage">
-          Spell damage: {{ result.spell_damage.raw }}
-        </div>
-        <div v-if="result.overload">Overload: {{ result.overload.raw }}</div>
-        <br />
-        <div v-if="result.artist">Artist: {{ result.artist.raw }}</div>
+        <div v-if="result.level">Type: {{ result.level }}</div>
+        <div v-if="result.path">Path: {{ result.path }}</div>
       </div>
     </div>
-  </article>
+  </div>
 </template>
 
 <script>
@@ -40,11 +21,6 @@ export default {
     result: {
       type: Object,
       required: true
-    }
-  },
-  methods: {
-    imageSrc(id) {
-      return `https://art.hearthstonejson.com/v1/render/latest/enUS/512x/${id}.png`;
     }
   }
 };
@@ -74,6 +50,7 @@ export default {
 
 .search-result__data {
   padding-top: 50px;
+  text-align: left;
 }
 
 .search-result__flavor {

@@ -2,7 +2,7 @@
   <div class="container-fluid h-100">
     <div class="container mt-4">
       <div class="row d-flex justify-content-center">
-          <div class="col-md-9">
+          <div class="col-md-12">
               <div class="card p-2 mt-4">
                 <b-collapse visible id="collapse-welcome">
                   <h3 class="heading mt-4 text-center">Hi! How can we help you?</h3>
@@ -28,39 +28,60 @@
       </div>
     </div>
     <div class="row p-3">
-      <div v-if="searchState.wasSearched" class="col-md-3">
-        <div class="card-inner p-3"><h4>Descriptive Hierarchy</h4>
-          <SearchSort v-show="thereAreResults" v-model="sortBy" />
-          <SearchHierarchyFacet
+      <div class="col-md-3">
+        <div class="card p-3 description-box"><h4>Descriptive Hierarchy</h4>
+          <PathFacet
             v-show="thereAreResults"
-            :checked="parentpath"
-            :facet="searchState.facets.parentpath[0]"
-            @change="handleHierarchyFacetChange($event, 'parentpath')"
-          />
-          <SearchFacet
-            v-show="thereAreResults"
-            :checked="level"
-            :facet="searchState.facets.level[0]"
-            @change="handleFacetChange($event, 'level')"
+            :checked="checked_pathfacet"
+            :facets="pathfacets"
+            @change="handlePathFacetChange($event)"
           />
         </div>
       </div>
       <div class="col-md-6">
-        <div v-if="searchState.wasSearched" class="card-inner p-3"><h4>Results / Graph Context / Viewer</h4>
-          <SearchResults
-            v-show="thereAreResults"
-            :results="searchState.results"
-          />
+        <div class="row justify-content-center">
+          <div class="col-md-12">
+            <nav class="" v-if="resultsPagingRequired" aria-label="Page navigation">
+              <ul class="justify-content-center pagination">
+                  <li class="page-item">
+                      <button type="button" class="page-link" aria-label="Previous" v-on:click="changePageToPrevious()">
+                          <span aria-hidden="true">&laquo;</span>
+                      </button>
+                  </li>
+                  <li v-for="page in Math.min(10, totalPages)" v-bind:key="page" class="page-item">
+                      <button type="button" class="page-link" v-on:click="changePageTo(page)">
+                          <span aria-hidden="true">{{ page }}</span>
+                      </button>
+                  </li>
+                  <li class="page-item">
+                      <button type="button" class="page-link" aria-label="Next" v-on:click="changePageToNext()">
+                          <span aria-hidden="true">&raquo;</span>
+                      </button>
+                  </li>
+              </ul>
+            </nav>
+          </div>
+          <div class="col-md-2">
+            <!-- <SearchSort v-show="thereAreResults" v-model="sortBy" /> -->
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-12 p-3">
+            <SearchResults
+              v-show="thereAreResults"
+              :results="results"
+            />
+          </div>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card-inner p-3"><h4>Related Topics</h4>
+        <div class="card p-3"><h4>Related Topics</h4>
         </div>
       </div>
     </div>
     <div class="row">
       <div class="col-md-12 fixed-bottom fw-bold flex-md-nowrap p-4 pb-0 shadow">
-        <div class="card-inner p-0 text-center">
+        <div class="card p-0 text-center">
           <b-collapse id="collapse-fav" class="mt-2">
               <p class="card-text">Your Browser-Saved References Shown Here</p>
           </b-collapse>
@@ -74,126 +95,198 @@
   </div>
 </template>
 <script>
-import { SearchDriver } from "@elastic/search-ui";
-import config from "../searchConfig";
+//import { SearchDriver } from "@elastic/search-ui";
+//import config from "../searchConfig";
 import SearchResults from "./SearchResults";
-import SearchSort from "./SearchSort";
-import SearchFacet from "./SearchFacet";
-import SearchHierarchyFacet from "./SearchHierarchyFacet";
+//import SearchSort from "./SearchSort";
+//import SearchFacet from "./SearchFacet";
+import PathFacet from "./PathFacet";
 import SearchHeader from "./SearchHeader";
 
-const driver = new SearchDriver(config);
-console.log(driver);
+//const { Client } = require('@elastic/elasticsearch');
+//const client = new Client({node: 'http://localhost:9200'});
+//const { errors } = require('@elastic/elasticsearch')
+//console.log(errors)
 
 export default {
   name: 'Access',
   components: {
     SearchResults,
-    SearchSort,
-    SearchFacet,
-    SearchHierarchyFacet,
+    //SearchSort,
+    //SearchFacet,
+    PathFacet,
     SearchHeader
   },
   data() {
     return {
-      searchInputValue: "",
-      searchState: {},
-      level: [],
-      parentpath: [],
-      rarity: [],
-      type: [],
-      set: [],
-      card_class: [],
-      cost: [],
       resultsPerPage: 20,
-      sortBy: "relevance"
+      sortBy: "relevance",
+      searchInputValue: "",
+      currentPage: 0,
+      totalResults: 0,
+      results: [],
+      levels: [],
+      checked_levels: [],
+      pathfacets: [],
+      checked_pathfacet: "",
+      resultsPagingRequired: false,
+      totalPages: 0,
+      tooManyPages: false,
     };
   },
   computed: {
     thereAreResults() {
-      return this.searchState.totalResults && this.searchState.totalResults > 0;
+      return this.totalResults && this.totalResults > 0;
     }
   },
   watch: {
     resultsPerPage(newResultsPerPage) {
-      driver.setResultsPerPage(newResultsPerPage);
+      this.resultsPerPage = newResultsPerPage;
     },
     sortBy(newSortBy) {
-      driver.setSort(newSortBy, "asc");
+      this.sortBy = newSortBy;
     }
   },
-  mounted() {
-    const {
-      searchTerm,
-      sortField,
-      resultsPerPage,
-      filters,
-      facets
-    } = driver.getState();
-
-    // restoring UI from url query
-    this.searchInputValue = searchTerm;
-    this.sortBy = sortField;
-    this.resultsPerPage = resultsPerPage;
-    filters.forEach(filter => {
-      if (facets[filter.field][0].type === "range") {
-        this[filter.field] = filter.values.map(value => value.name);
-      } else {
-        this[filter.field] = filter.values;
-      }
-    });
-
-    driver.subscribeToStateChanges(state => {
-      //console.log(state);
-      this.searchState = state;
-    });
+  created() {
+    this.handleFormSubmit();
   },
   methods: {
-    handleFormSubmit() {
-      console.log(this.searchInputValue);
-      driver.getActions().setSearchTerm(this.searchInputValue);
-    },
-    handleFacetChange(event, facet) {
-      const { value, checked } = event.target;
-      const facetFromDriver = driver.getState().facets[facet][0];
-      const valueforApi =
-        facetFromDriver.type === "range"
-          ? facetFromDriver.data.find(item => item.value.name === value).value
-          : value;
-
-      if (checked) {
-        this[facet].push(value);
-        driver.addFilter(facet, valueforApi, "any");
-      } else {
-        const index = this[facet].indexOf(value);
-        if (index > -1) {
-          this[facet].splice(index, 1);
-        }
-        driver.removeFilter(facet, valueforApi, "any");
+    handleFormSubmit: function() {
+      // defaults when no path selected
+      var min_depth = 0;
+      var max_depth = 1;
+      var searchfilter = [];
+      if(this.checked_pathfacet.trim().length > 0) {
+        searchfilter.push({ "term": { "pathfacet" : this.checked_pathfacet } });
+        max_depth = this.checked_pathfacet.split("/").length-1;
       }
+      var facetfilter =
+      {
+        "bool": {
+          "must_not":[ { "term": { "pathfacet": "1" } }, { "term": { "pathfacet": "G1" } } ],
+          "filter": { "range": { "depth": { "gte": min_depth, "lte": max_depth } } },
+        }
+      }
+      var query =
+      {
+        "bool": {
+          "must": {
+            "match_all": {}
+          },
+          "filter": searchfilter
+        }
+      };
+      if(this.searchInputValue.trim().length > 0) {
+        query = {
+          "bool":{
+            "should":[
+              {"multi_match":{
+                "query":this.searchInputValue,
+                "fields":["title","description"],
+                "type":"best_fields",
+                "operator":"and"}
+              },
+              {"multi_match": {
+                "query":this.searchInputValue,
+                "fields":["title","description"],
+                "type":"cross_fields"}
+              },
+              {"multi_match":{
+                "query":this.searchInputValue,
+                "fields":["title","description"],
+                "type":"phrase"}
+              },
+              {"multi_match":{
+                "query":this.searchInputValue,
+                "fields":["title","description"],
+                "type":"phrase_prefix"}
+              }
+            ],
+            "filter": searchfilter
+          }
+        }
+      }
+
+      var esQuery = {
+        "aggs":
+          {"facet_bucket_all":
+            {"aggs":{
+              "pathfacet":{
+                "terms":{
+                  "field":"pathfacet",
+                  "size":500,
+                  "order":{ "_key": "asc" }
+                }
+              },
+              "level":{
+                "terms":{
+                  "field":"level",
+                  "size":20,
+                  "order":{"_count":"desc"}
+                }
+              }
+            },
+            "filter": facetfilter,
+          }
+        },
+        // "_source":{
+        //   "includes":["title","pathfacet","description","level"]
+        // },
+        "query": query,
+        "from": Math.max(0, (this.currentPage - 1) * this.resultsPerPage),
+        "size": this.pageSize,
+        "sort":[
+          {"_score":"desc"}
+        ]
+      };
+      this.$http.post("http://localhost:9200/descriptions/_search", esQuery).
+        then(
+          response => {
+            var body = response.data
+            this.totalResults = body.hits.total.value
+            var numPagesInResults = this.totalResults == 0 ? 0 : Math.trunc(1 + ((this.totalResults - 1) / this.resultsPerPage))
+            this.resultsPagingRequired = numPagesInResults > 0
+            this.totalPages = numPagesInResults
+            this.tooManyPages = numPagesInResults > 20
+            this.results = body.hits.hits.map(hit => hit._source)
+            this.pathfacets = body.aggregations.facet_bucket_all.pathfacet.buckets
+            this.levels = body.aggregations.facet_bucket_all.level.buckets
+            //this.notify(body.took, this.totalResults)
+          },
+          response => {
+            console.error("failed ES search", response)
+            alert("system failure of some sort")
+          }
+        )
     },
-    handleHierarchyFacetChange(event, facet) {
+    handlePathFacetChange(event) {
       const { value, checked } = event.target;
       if (checked) { // special logic for hierarchy.. Uncheck parent will uncheck children. Check parent will uncheck children..
-        this[facet].push(value);
-        driver.addFilter(facet, value, "any");
+        this.checked_pathfacet = value;
       } else {
-        const index = this[facet].indexOf(value);
-        if (index > -1) {
-          this[facet].splice(index, 1);
-        }
-        driver.removeFilter(facet, value, "any");
+        this.checked_pathfacet = "";
       }
-      // remove all other hierachy facets/filters
-      Object.values(this[facet]).forEach((v, ind)=> {
-        if( v !== value ) {
-          this[facet].splice(ind, 1);
-          driver.removeFilter(facet, v, "any");
-        }
-      });
+      this.currentPage = 1;
+      this.handleFormSubmit();
     },
-    setCurrentPage(page) {
-      driver.setCurrent(page);
+    changePageToPrevious: function() {
+      this.changePageTo(this.currentPage - 1)
+    },
+    changePageToNext: function() {
+      this.changePageTo(this.currentPage + 1)
+    },
+    changePageTo: function(pageNumber) {
+      if (pageNumber < 1) {
+        pageNumber = 1
+      }
+      if (pageNumber > this.totalPages) {
+        pageNumber = this.totalPages
+      }
+      if (pageNumber == this.currentPage) {
+        return
+      }
+      this.currentPage = pageNumber
+      this.handleFormSubmit()
     }
   }
 };
@@ -256,12 +349,27 @@ a:link {
     transition: all 2s
 }
 
+.description-box:hover {
+  width: 250%;
+  position: relative;
+  z-index: 1;
+  transition: all 2s;
+}
+
 .mg-text span {
     font-size: 12px
 }
 
 .mg-text {
     line-height: 14px
+}
+
+.pagination {
+  margin-bottom: 0rem;
+}
+
+.page-item {
+  margin: 0px;
 }
 
 .collapsed > .when-open,

@@ -2,7 +2,7 @@
   <ul class="sui-results-container search-section__search-results">
     <li
       v-for="result in results"
-      :key="result.id.raw"
+      :key="result.path.raw"
       class="search-section__search-result"
     >
       <SearchResult :result="result" />

@@ -2,7 +2,7 @@
 
 ## LDP Preparation
 
-The DAMS UI expects certain folders to exist on startup. So we have to create them.
+The DAMS UI expects certain folders to exist on the LDP server. So we have to create them.
 
 ```
 curl -X POST \
@@ -13,21 +13,25 @@ curl -X POST \
 
 ## Project setup
 ```
+cd app
 npm install
 ```
 
 ### Compiles and hot-reloads for development
 ```
-npm run serve
+cd app
+env $(cat test.env | xargs) npm run serve
 ```
 
 ### Compiles and minifies for production
 ```
+cd app
 npm run build
 ```
 
 ### Lints and fixes files
 ```
+cd app
 npm run lint
 ```
 

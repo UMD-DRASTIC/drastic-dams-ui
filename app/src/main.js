@@ -16,9 +16,13 @@ require('dotenv').config()
 const config = new Configuration(process.env);
 //const baseURL = config.value('baseURL');
 const ldpURL = config.value('ldpURL');
+console.log(ldpURL);
 const asWebSocketURL = config.value('asWebSocketURL');
+console.log(asWebSocketURL);
 const ldpUsername = config.value('ldpUsername');
+console.log(ldpUsername);
 const ldpPassword = config.value('ldpPassword');
+console.log(ldpPassword);
 
 const routes = [
     {

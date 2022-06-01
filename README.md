@@ -8,7 +8,7 @@ The DAMS UI expects certain folders to exist on the LDP server. So we have to cr
 curl -X POST \
      -H "Link: <http://www.w3.org/ns/ldp#BasicContainer>; rel=\"type\"" \
      -H "Slug: submissions" \
-     http://localhost:8080
+     http://localhost:9090
 ```
 
 ## Project setup

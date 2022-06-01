@@ -1,5 +1,5 @@
 <template>
-  <div class="container-fluid h-100">
+  <div id="bg" class="container-fluid h-100">
     <div class="container mt-4">
       <div class="row d-flex justify-content-center">
           <div class="col-md-12">
@@ -29,7 +29,7 @@
     </div>
     <div class="row p-3">
       <div class="col-md-3">
-        <div class="card p-3 description-box"><h4>Descriptive Hierarchy</h4>
+        <div class="card p-3 h-100 description-box"><h4>Descriptive Hierarchy</h4>
           <PathFacet
             v-show="thereAreResults"
             :checked="checked_pathfacet"
@@ -67,7 +67,7 @@
         </div>
         <div class="row">
           <div class="col-md-12 p-3">
-            <SearchResults
+            <SearchResults @pathfacet="pathfacet" @view="view"
               v-show="thereAreResults"
               :results="results"
             />
@@ -75,7 +75,7 @@
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card p-3"><h4>Related Topics</h4>
+        <div class="card p-3 h-100"><h4>Related Topics</h4>
         </div>
       </div>
     </div>
@@ -127,7 +127,7 @@ export default {
       results: [],
       levels: [],
       checked_levels: [],
-      pathfacets: [],
+      pathfacets: {},
       checked_pathfacet: "",
       resultsPagingRequired: false,
       totalPages: 0,
@@ -151,10 +151,19 @@ export default {
     this.handleFormSubmit();
   },
   methods: {
+    view: function(uri) {
+      console.log("viewing: "+uri);
+    },
+    pathfacet: function(path) {
+      console.log("pathfacet: "+path);
+      this.checked_pathfacet = path;
+      this.currentPage = 1;
+      this.handleFormSubmit();
+    },
     handleFormSubmit: function() {
       // defaults when no path selected
       var min_depth = 0;
-      var max_depth = 1;
+      var max_depth = 0;
       var searchfilter = [];
       if(this.checked_pathfacet.trim().length > 0) {
         searchfilter.push({ "term": { "pathfacet" : this.checked_pathfacet } });
@@ -163,7 +172,7 @@ export default {
       var facetfilter =
       {
         "bool": {
-          "must_not":[ { "term": { "pathfacet": "1" } }, { "term": { "pathfacet": "G1" } } ],
+          //"must_not":[ { "term": { "pathfacet": "1" } }, { "term": { "pathfacet": "G1" } } ],
           "filter": { "range": { "depth": { "gte": min_depth, "lte": max_depth } } },
         }
       }
@@ -173,7 +182,12 @@ export default {
           "must": {
             "match_all": {}
           },
-          "filter": searchfilter
+          "filter": searchfilter,
+          // "must_not": {
+          //   "term": {
+          //     "path": this.checked_pathfacet
+          //   }
+          // }
         }
       };
       if(this.searchInputValue.trim().length > 0) {
@@ -200,6 +214,9 @@ export default {
                 "query":this.searchInputValue,
                 "fields":["title","description"],
                 "type":"phrase_prefix"}
+              },
+              {"terms":{
+                "pathfacet": [this.searchInputValue]}
               }
             ],
             "filter": searchfilter
@@ -214,7 +231,7 @@ export default {
               "pathfacet":{
                 "terms":{
                   "field":"pathfacet",
-                  "size":500,
+                  "size":1000,
                   "order":{ "_key": "asc" }
                 }
               },
@@ -234,7 +251,7 @@ export default {
         // },
         "query": query,
         "from": Math.max(0, (this.currentPage - 1) * this.resultsPerPage),
-        "size": this.pageSize,
+        "size": this.resultsPerPage,
         "sort":[
           {"_score":"desc"}
         ]
@@ -243,13 +260,22 @@ export default {
         then(
           response => {
             var body = response.data
-            this.totalResults = body.hits.total.value
+            this.results = body.hits.hits.map(hit => hit._source)
+
+            // PAGING
+            this.totalResults = this.results.length
             var numPagesInResults = this.totalResults == 0 ? 0 : Math.trunc(1 + ((this.totalResults - 1) / this.resultsPerPage))
             this.resultsPagingRequired = numPagesInResults > 0
             this.totalPages = numPagesInResults
             this.tooManyPages = numPagesInResults > 20
-            this.results = body.hits.hits.map(hit => hit._source)
-            this.pathfacets = body.aggregations.facet_bucket_all.pathfacet.buckets
+
+            var newPathFacets = {};
+            var f = body.aggregations.facet_bucket_all.pathfacet.buckets;
+            for (var i = 0; i < f.length; i++) {
+              newPathFacets[f[i].key] = f[i];
+            }
+            //newPathFacets.sort( (a, b) => String(a["key"]).localeCompare(b["key"]) );
+            this.pathfacets = newPathFacets;
             this.levels = body.aggregations.facet_bucket_all.level.buckets
             //this.notify(body.took, this.totalResults)
           },
@@ -323,6 +349,14 @@ div.label {
 
 body {
     background-color: blue
+}
+
+div#bg {
+  background-image: url(/US-NationalParkService-Logo.svg);
+  background-repeat: no-repeat;
+  background-size: 150px 220px;
+  background-attachment: relative;
+  background-position: 70px 10px;
 }
 
 .card {

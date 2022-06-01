@@ -2,31 +2,34 @@
   <div v-show="facets.length" style="text-align: left" class="checkbox-facet">
     <div class="checkbox-facet_options-list">
       <label
-        v-for="facetItem in facets"
-        :key="facetItem.key"
+        v-for="facetkey in facetKeysSorted"
+        :key="facetkey"
         class="checkbox-facet-option"
       >
-        <pre class="checkbox-facet-option-graphic">{{ pathGraphic(facetItem.key) }}</pre>
+        <pre class="checkbox-facet-option-graphic">{{ pathGraphic(facetkey) }}</pre>
         <input
           class="checkbox-facet-option-checkbox"
           type="checkbox"
-          :value="facetItem.key"
-          :checked="facetItem.key == checked"
+          :value="facetkey"
+          :checked="facetkey == checked"
           @change="$emit('change', $event)"
         />
-        &nbsp;<span class="checkbox-facet-option-path">{{ lastSegment(facetItem.key) }}</span>
-        &nbsp;<span class="checkbox-facet-option-count">({{ facetItem.doc_count }})</span>
-        &nbsp;<span v-if="facetItem.label" class="checkbox-facet-option-label">{{ facetItem.label }}</span>
+        &nbsp;<span class="checkbox-facet-option-path">{{ lastSegment(facetkey) }}</span>
+        &nbsp;<span v-if="facets[facetkey].label" class="checkbox-facet-option-label">{{ facets[facetkey].label }}</span>
       </label>
     </div>
   </div>
 </template>
 
+<note>
+  &nbsp;<span class="checkbox-facet-option-count">({{ facets[facetkey].doc_count }})</span>
+</note>
+
 <script>
 export default {
   props: {
     facets: {
-      type: Array,
+      type: Object,
       required: true
     },
     checked: {
@@ -47,7 +50,9 @@ export default {
     }
   },
   computed: {
-
+    facetKeysSorted: function () {
+      return Object.keys(this.facets).sort();
+    }
   },
   methods: {
     pathGraphic(path) {
@@ -68,7 +73,12 @@ export default {
     },
     async loadLabels() {
       if(this.facets.length == 0) return;
-      var missing_paths = this.facets.filter(f => !("label" in f)).map(f => f.key)
+      var missing_paths = [];
+      Object.entries(this.facets).forEach((e) => {
+        if(!("label" in e[1])) {
+          missing_paths.push(e[0]);
+        }
+      });
       var esQuery =
       {
         "query": {
@@ -81,22 +91,17 @@ export default {
         "fields": [ "title", "path"],
         "size": missing_paths.length
       }
-      var facetIndex = 0;
       try {
         var r = await this.$http.post("http://localhost:9200/descriptions/_search", esQuery)
         for (let i = 0; i < r.data.hits.hits.length; i++) {
-          if(!(facetIndex < this.facets.length-2)) break;
           var hit = r.data.hits.hits[i];
-          while(this.facets[facetIndex].key != hit.fields.path[0]) {
-            facetIndex = facetIndex + 1;
-          }
-          this.$set(this.facets[facetIndex], "label", hit.fields.title[0]);
+          var path = hit.fields.path[0];
+          var label = hit.fields.title ? hit.fields.title[0] : null;
+          this.$set(this.facets[path], "label", label);
         }
       } catch(error) {
         console.log(this.facets);
-        console.log(facetIndex);
         console.error("failed ES search", error)
-        alert("system failure of some sort")
       }
     }
   }

@@ -415,7 +415,7 @@ export default {
           'Slug': name
         };
         await this.$http.post(this.ldpURL + this.submissionsPath,
-          `<> a <${this.NPS('submission').value}> .`,
+          `<${this.ldpURL + this.submissionsPath + name + '/'}> a <${this.NPS('submission').value}> .`,
           { headers: head,
             withCredentials: true,
             auth: {

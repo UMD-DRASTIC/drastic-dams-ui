@@ -1,5 +1,5 @@
 <template>
-<div id="app" class="container-fluid"  style="background: gray">
+<div id="app" class="container-fluid">
   <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
     <ul class="nav nav-pills nav-fill col-md-9 px-3">
       <li class="nav-item text-nowrap">
@@ -21,9 +21,9 @@
         </router-link>
       </li>
       <li class="nav-item text-nowrap">
-        <router-link class="nav-link" to="/destructions">
-          <font-awesome-icon icon="fa-trash-can fa-xl" />
-          Destructions
+        <router-link class="nav-link" to="/topics">
+          <font-awesome-icon icon="fa-tag fa-xl" />
+          Topics
         </router-link>
       </li>
       <li class="nav-item text-nowrap">
@@ -58,14 +58,18 @@ export default {
 
 <style>
 html, body, #main {
-  height: 100%;
+  /* height: 100%; */
+}
+
+#app > main {
+  margin-top: 45px;
 }
 
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-align: center;
+  /* text-align: center;*/
   color: #2c3e50;
   padding: 0px;
   padding-top: 16px;
@@ -136,6 +140,6 @@ a.router-link-active {
     padding: 30px;
     border: 1px solid #ccc;
     border-radius: 10px;
-  box-shadow: 3px 3px 6px #e1e1e1
+    box-shadow: 3px 3px 6px #e1e1e1
 }
 </style>

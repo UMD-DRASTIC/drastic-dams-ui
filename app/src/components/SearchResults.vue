@@ -39,7 +39,7 @@ export default {
 <style>
 img.card-img-top {
   height: 10rem;
-  /*overflow-y: hidden;*/
+  /* overflow-y: scroll; */
   object-position: top;
   object-fit: cover;
 }

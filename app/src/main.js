@@ -11,6 +11,9 @@ import Dashboard from './components/dashboard'
 import Description from './components/description'
 import Access from './components/access'
 import Submissions from './components/submissions'
+import Topics from './components/topics'
+import remainingHeight from './assets/js/remaining_height'
+Vue.directive(remainingHeight)
 
 require('dotenv').config()
 const config = new Configuration(process.env);
@@ -51,6 +54,11 @@ const routes = [
           ldpUsername: ldpUsername,
           ldpPassword: ldpPassword,
         }
+    },
+    {
+        path: '/topics',
+        name: 'Topics',
+        component: Topics
     }
 ]
 
@@ -60,9 +68,9 @@ const router = new VueRouter({
 
 /* import the fontawesome stuff */
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBoxArchive, faFolder, faLayerGroup, faFile, faSearch, faBoxesStacked, faPeopleCarryBox, faTrashCan, faChartPie, faBookmark, faRightFromBracket } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-library.add(faBoxArchive, faFolder, faLayerGroup, faFile, faSearch, faBoxesStacked, faPeopleCarryBox, faTrashCan, faChartPie, faBookmark, faRightFromBracket)
+import { faBoxArchive, faPerson, faUsers, faMapLocationDot, faTag, faFolder, faLayerGroup, faFile, faSearch, faBoxesStacked, faPeopleCarryBox, faTrashCan, faChartPie, faBookmark, faRightFromBracket } from '@fortawesome/free-solid-svg-icons'
+library.add(faBoxArchive, faPerson, faUsers, faMapLocationDot, faTag, faFolder, faLayerGroup, faFile, faSearch, faBoxesStacked, faPeopleCarryBox, faTrashCan, faChartPie, faBookmark, faRightFromBracket)
 Vue.component('font-awesome-icon', FontAwesomeIcon)
 
 import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'

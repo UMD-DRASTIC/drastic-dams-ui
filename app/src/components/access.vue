@@ -29,7 +29,7 @@
     </div>
     <div class="row p-3">
       <div class="col-md-3">
-        <div class="card p-3 h-100 description-box"><h4>Descriptive Hierarchy</h4>
+        <div class="card p-3 h-100 description-box"><h4>Collections</h4>
           <PathFacet
             v-show="thereAreResults"
             :checked="checked_pathfacet"
@@ -75,7 +75,7 @@
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card p-3 h-100"><h4>Related Topics</h4>
+        <div class="card p-3 h-100"><h4>Related Subjects</h4>
         </div>
       </div>
     </div>
@@ -92,6 +92,7 @@
         </div>
       </div>
     </div>
+    <Viewer ref="viewer" @view="view" />
   </div>
 </template>
 <script>
@@ -102,6 +103,7 @@ import SearchResults from "./SearchResults";
 //import SearchFacet from "./SearchFacet";
 import PathFacet from "./PathFacet";
 import SearchHeader from "./SearchHeader";
+import Viewer from "./Viewer";
 
 //const { Client } = require('@elastic/elasticsearch');
 //const client = new Client({node: 'http://localhost:9200'});
@@ -115,7 +117,8 @@ export default {
     //SearchSort,
     //SearchFacet,
     PathFacet,
-    SearchHeader
+    SearchHeader,
+    Viewer
   },
   data() {
     return {
@@ -132,6 +135,7 @@ export default {
       resultsPagingRequired: false,
       totalPages: 0,
       tooManyPages: false,
+      viewedItemURI: "",
     };
   },
   computed: {
@@ -151,8 +155,9 @@ export default {
     this.handleFormSubmit();
   },
   methods: {
-    view: function(uri) {
-      console.log("viewing: "+uri);
+    view: function(item) {
+      console.log("opening: "+item);
+      this.$refs.viewer.open(item);
     },
     pathfacet: function(path) {
       console.log("pathfacet: "+path);

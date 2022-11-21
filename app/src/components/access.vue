@@ -168,7 +168,7 @@ export default {
     handleFormSubmit: function() {
       // defaults when no path selected
       var min_depth = 0;
-      var max_depth = 0;
+      var max_depth = 2;
       var searchfilter = [];
       if(this.checked_pathfacet.trim().length > 0) {
         searchfilter.push({ "term": { "pathfacet" : this.checked_pathfacet } });
@@ -242,7 +242,7 @@ export default {
               },
               "level":{
                 "terms":{
-                  "field":"level",
+                  "field":"depth",
                   "size":20,
                   "order":{"_count":"desc"}
                 }
@@ -338,9 +338,6 @@ ul {
 li {
   display: inline-block;
   margin: 0 10px;
-}
-a {
-  /* color: #42b983;*/
 }
 
 span.crumb {
